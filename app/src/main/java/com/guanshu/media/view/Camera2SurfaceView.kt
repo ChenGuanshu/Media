@@ -29,7 +29,7 @@ class Camera2SurfaceView : SurfaceView {
     )
 
     fun updateSize(width: Int, height: Int) {
-        Log.d(TAG, "updateSize: $width*$height")
+        Log.i(TAG, "updateSize: $width*$height")
         post {
             updatedWidth = width
             updatedHeight = height
