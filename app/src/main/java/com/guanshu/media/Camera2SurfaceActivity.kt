@@ -24,7 +24,7 @@ class Camera2SurfaceActivity : ComponentActivity(), SurfaceHolder.Callback {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activty_camera_to_surface)
+        setContentView(R.layout.activity_camera_to_surface)
         surfaceView = findViewById(R.id.surface_camera)
         surfaceView.holder.addCallback(this)
 
@@ -73,7 +73,7 @@ class Camera2SurfaceActivity : ComponentActivity(), SurfaceHolder.Callback {
         camera2.openCamera(surfaceView.width, surfaceView.height) { newWidth, newHeight ->
             surfaceView.updateSize(newWidth, newHeight)
         }
-        camera2.startPreview(holder)
+        camera2.startPreview(holder.surface)
     }
 
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {

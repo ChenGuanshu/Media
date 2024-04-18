@@ -17,11 +17,11 @@ import android.os.HandlerThread
 import android.util.Log
 import android.util.Size
 import android.view.OrientationEventListener
+import android.view.Surface
 import android.view.SurfaceHolder
 import com.google.common.base.Optional
 import com.guanshu.media.utils.postOrRun
 import io.reactivex.rxjava3.core.Completable
-import io.reactivex.rxjava3.core.Single
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.subjects.BehaviorSubject
 import java.lang.Exception
@@ -47,7 +47,7 @@ class Camera2(private val context: Context) {
     private var previewSize = Size(1080, 1920)
     private var previewRequestBuilder: CaptureRequest.Builder? = null
     private var previewDisposable: Disposable? = null
-    private var previewSurfaceHolder: SurfaceHolder? = null
+    private var previewSurface: Surface? = null
 
     private var captureDisposable: Disposable? = null
     private var imageReader: ImageReader? = null
@@ -146,10 +146,10 @@ class Camera2(private val context: Context) {
         }
     }
 
-    fun startPreview(surfaceHolder: SurfaceHolder) {
+    fun startPreview(surface: Surface) {
         cameraHandler.postOrRun {
             Log.i(TAG, "startPreview")
-            previewSurfaceHolder = surfaceHolder
+            previewSurface = surface
             previewDisposable = cameraDeviceSubject
                 .subscribe {
                     val cameraDevice = it.orNull()
@@ -177,11 +177,11 @@ class Camera2(private val context: Context) {
 
                     previewRequestBuilder =
                         cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW)
-                    previewRequestBuilder!!.addTarget(surfaceHolder.surface)
+                    previewRequestBuilder!!.addTarget(previewSurface!!)
 //                    previewRequestBuilder!!.addTarget(imageReader!!.surface)
 
                     cameraDevice.createCaptureSession(
-                        listOf(surfaceHolder.surface, imageReader!!.surface),
+                        listOf(previewSurface!!, imageReader!!.surface),
                         object : CameraCaptureSession.StateCallback() {
                             override fun onConfigured(session: CameraCaptureSession) {
                                 if (previewDisposable == null || previewDisposable?.isDisposed == true) {
@@ -246,7 +246,7 @@ class Camera2(private val context: Context) {
                         CameraDevice.TEMPLATE_STILL_CAPTURE
                     )
 
-                    captureBuilder.addTarget(previewSurfaceHolder!!.surface)
+                    captureBuilder.addTarget(previewSurface!!)
                     captureBuilder.addTarget(imageReader!!.surface)
 
                     captureBuilder.set(
@@ -267,10 +267,10 @@ class Camera2(private val context: Context) {
 
                     Log.i(TAG, "take picture: stop preview")
                     if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.O) {
-                        session.stopRepeating();
+                        session.stopRepeating()
                     } else {
-                        session.stopRepeating();
-                        session.abortCaptures();
+                        session.stopRepeating()
+                        session.abortCaptures()
                     }
 
                     session.capture(
@@ -318,20 +318,20 @@ class Camera2(private val context: Context) {
         cameraCharacteristics: CameraCharacteristics,
         deviceOrientation: Int
     ): Int {
-        if (deviceOrientation == android.view.OrientationEventListener.ORIENTATION_UNKNOWN) return 0
+        if (deviceOrientation == OrientationEventListener.ORIENTATION_UNKNOWN) return 0
         val sensorOrientation =
             cameraCharacteristics.get(CameraCharacteristics.SENSOR_ORIENTATION)!!
         // Round device orientation to a multiple of 90
-        var deviceOrientation = (deviceOrientation + 45) / 90 * 90;
+        var deviceOrientation = (deviceOrientation + 45) / 90 * 90
         // Reverse device orientation for front-facing cameras
         val facingFront =
             cameraCharacteristics.get(CameraCharacteristics.LENS_FACING) == CameraCharacteristics
-                .LENS_FACING_FRONT;
-        if (facingFront) deviceOrientation = -deviceOrientation;
+                .LENS_FACING_FRONT
+        if (facingFront) deviceOrientation = -deviceOrientation
         // Calculate desired JPEG orientation relative to camera orientation to make
         // the image upright relative to the device orientation
-        val retOrientation = (sensorOrientation + deviceOrientation + 360) % 360;
-        Log.i(TAG, "retOrientation: $retOrientation");
-        return retOrientation;
+        val retOrientation = (sensorOrientation + deviceOrientation + 360) % 360
+        Log.i(TAG, "retOrientation: $retOrientation")
+        return retOrientation
     }
 }
