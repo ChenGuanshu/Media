@@ -2,6 +2,7 @@ package com.guanshu.media
 
 import android.os.Bundle
 import android.util.Log
+import android.util.Size
 import androidx.activity.ComponentActivity
 import com.guanshu.media.application.GlobalDependency
 import com.guanshu.media.view.Camera2GlSurfaceView
@@ -24,7 +25,7 @@ class Camera2GlSurfaceActivity : ComponentActivity() {
         Log.i(TAG, "onResume")
         surfaceView.onSurfaceCreate = { surface ->
             camera2.openCamera(surfaceView.width, surfaceView.height) { newWidth, newHeight ->
-                // TODO update matrix
+                surfaceView.cameraResolution = Size(newWidth, newHeight)
             }
             camera2.startPreview(surface)
         }

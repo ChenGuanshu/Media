@@ -4,7 +4,10 @@ import android.graphics.SurfaceTexture
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.opengl.Matrix
+import android.print.PrintAttributes
 import android.util.Log
+import android.util.Size
+import com.guanshu.media.utils.DefaultSize
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -105,11 +108,18 @@ class TextureRender {
 
     fun drawFrame(
         surfaceTexture: SurfaceTexture,
-        mediaResolution: Resolution,
-        screenResolution: Resolution,
+        mediaResolution: Size,
+        screenResolution: Size,
     ) {
         checkGlError("onDrawFrame start")
         surfaceTexture.getTransformMatrix(stMatrix)
+        /**
+         * 0.0, -1.0, 0.0, 0.0,
+         * 1.0,  0.0, 0.0, 0.0,
+         * 0.0,  0.0, 1.0, 0.0,
+         * 0.0,  1.0, 0.0, 1.0
+         * 这是一个st matrix的例子，表示了顺时针调整了90度，用来将纹理的内容正向
+         */
 
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
         GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT or GLES20.GL_COLOR_BUFFER_BIT)
@@ -149,10 +159,10 @@ class TextureRender {
 
     private fun adjustTransformMatrix(
         matrix: FloatArray,
-        mediaResolution: Resolution,
-        screenResolution: Resolution,
+        mediaResolution: Size,
+        screenResolution: Size,
     ) {
-        if (mediaResolution == Resolution.Default || screenResolution == Resolution.Default) {
+        if (mediaResolution == DefaultSize || screenResolution == DefaultSize) {
             return
         }
         // 计算原始画面的宽高比
@@ -180,7 +190,7 @@ class TextureRender {
         // TODO 这里其实算错了。
 
         // 构建变换矩阵
-        Matrix.scaleM(matrix, 0, scaleX, 1f, 1f)
+        Matrix.scaleM(matrix, 0, scaleX.toFloat(), 1f, 1f)
 //        Matrix.translateM(matrix, 0, translateX, translateY, 0f)
 //        matrix[0] = 0.2f
 //        matrix[5] = 0.2f
@@ -302,14 +312,5 @@ class TextureRender {
                     gl_FragColor =vec4(gray, gray, gray, 1.0);
                 }
                 """
-    }
-}
-
-data class Resolution(
-    val width: Float,
-    val height: Float,
-) {
-    companion object {
-        val Default = Resolution(-1f, -1f)
     }
 }

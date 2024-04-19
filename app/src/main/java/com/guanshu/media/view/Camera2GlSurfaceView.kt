@@ -6,10 +6,11 @@ import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.util.AttributeSet
 import android.util.Log
+import android.util.Size
 import android.view.Surface
 import com.google.android.exoplayer2.util.GlUtil
-import com.guanshu.media.opengl.Resolution
 import com.guanshu.media.opengl.TextureRender
+import com.guanshu.media.utils.DefaultSize
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
@@ -32,6 +33,8 @@ class Camera2GlSurfaceView : GLSurfaceView {
             }
             field = value
         }
+    var cameraResolution = DefaultSize
+    val viewResolution by lazy { Size(width, height) }
 
     private val renderer = object : Renderer {
         override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
@@ -61,8 +64,8 @@ class Camera2GlSurfaceView : GLSurfaceView {
                 surfaceTexture?.updateTexImage()
                 textureRender.drawFrame(
                     surfaceTexture!!,
-                    Resolution(-1f, -1f),
-                    Resolution(-1f, -1f)
+                    cameraResolution,
+                    viewResolution,
                 )
             }
         }
@@ -80,6 +83,6 @@ class Camera2GlSurfaceView : GLSurfaceView {
             /* stencilSize= */0
         )
         setRenderer(renderer)
-        renderMode = GLSurfaceView.RENDERMODE_WHEN_DIRTY
+        renderMode = RENDERMODE_WHEN_DIRTY
     }
 }

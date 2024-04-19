@@ -304,14 +304,15 @@ class Camera2(private val context: Context) {
     }
 
     private fun chooseSize(sizes: Array<Size>, width: Int, height: Int, orientation: Int): Size {
-        sizes.forEach {
+        Log.i(TAG, "choose size for $width, $height, $orientation")
+        sizes.forEachIndexed { index, size ->
             val thisSize =
-                if (orientation == 90 || orientation == 270) Size(it.width, it.height) else it
-            if (thisSize.width < thisSize.height && thisSize.width < width) {
-                return it
+                if (orientation == 90 || orientation == 270) Size(size.height, size.width) else size
+            if ((thisSize.width <= width && thisSize.height <= height) || index == sizes.lastIndex) {
+                return thisSize
             }
         }
-        return sizes.last()
+        throw RuntimeException("size not found")
     }
 
     private fun getOrientation(
