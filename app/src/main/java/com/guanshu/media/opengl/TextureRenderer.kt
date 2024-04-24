@@ -28,11 +28,12 @@ class TextureRender {
 
     init {
         // 顶点坐标和纹理坐标
-        val verticesData = floatArrayOf( // X, Y, Z, U, V
+        val verticesData = floatArrayOf(
+            // X, Y, Z, U, V
             -1.0f, -1.0f, 0f, 0f, 0f,
             1.0f, -1.0f, 0f, 1f, 0f,
             -1.0f, 1.0f, 0f, 0f, 1f,
-            1.0f, 1.0f, 0f, 1f, 1f
+            1.0f, 1.0f, 0f, 1f, 1f,
         )
         vertices = ByteBuffer.allocateDirect(
             verticesData.size * FLOAT_SIZE_BYTES
@@ -70,7 +71,10 @@ class TextureRender {
         }
         init = true
 
+//        program = createProgram(VERTEX_SHADER, FOUR_TIMES_FRAGMENT_SHADER)
+//        program = createProgram(VERTEX_SHADER, TWO_TIMES_FRAGMENT_SHADER)
         program = createProgram(VERTEX_SHADER, FRAGMENT_SHADER)
+//        program = createProgram(GAUSSIAN_VERTEX_SHADER, GAUSSIAN_FRAGMENT_SHADER)
         if (program == 0) {
             throw RuntimeException("failed creating program")
         }
@@ -147,7 +151,11 @@ class TextureRender {
 
         checkGlError("glEnableVertexAttribArray maTextureHandle")
         Matrix.setIdentityM(mvpMatrix, 0)
-//        adjustTransformMatrix(mvpMatrix, mediaResolution, screenResolution)
+        adjustTransformMatrix(mvpMatrix, mediaResolution, screenResolution)
+
+        // 缩放纹理，会导致纹理坐标 >1 的使用 clamp_to_edge mode，出现像素重复
+        // 建议缩放顶点坐标
+//        Matrix.scaleM(stMatrix, 0, 2f, 2f, 1f)
 
         GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
         GLES20.glUniformMatrix4fv(stMatrixHandle, 1, false, stMatrix, 0)
@@ -157,6 +165,9 @@ class TextureRender {
         GLES20.glFinish()
     }
 
+    /**
+     * TODO 这个可以优化成只做一次
+     */
     private fun adjustTransformMatrix(
         matrix: FloatArray,
         mediaResolution: Size,
@@ -165,37 +176,25 @@ class TextureRender {
         if (mediaResolution == DefaultSize || screenResolution == DefaultSize) {
             return
         }
-        // 计算原始画面的宽高比
-        val aspectRatio = mediaResolution.width / mediaResolution.height
+        val mediaAspectRatio = mediaResolution.width.toFloat() / mediaResolution.height
+        val viewAspectRatio = screenResolution.width.toFloat() / screenResolution.height
 
-        // 计算目标显示区域的宽高比。这里假设我们想要画面宽度填充屏幕宽度，并计算相应的高度
-        var targetWidth = screenResolution.width
-        var targetHeight = targetWidth / aspectRatio
-
-        // 检查是否需要调整高度以适应屏幕高度，并保留黑边
-        if (targetHeight > screenResolution.height) {
-            targetHeight = screenResolution.height
-            targetWidth = targetHeight * aspectRatio
+        var scaleX = 1f
+        var scaleY = 1f
+        if (mediaAspectRatio > viewAspectRatio) {
+            // 视频比view更宽,x填满整个屏幕,y需要缩放，
+            val expectedHeight =
+                screenResolution.width.toFloat() / mediaResolution.width * mediaResolution.height
+            // 视频高度被默认拉伸填充了view，需要缩放
+            scaleY = expectedHeight / screenResolution.height
+        } else {
+            val expectedWidth =
+                screenResolution.height.toFloat() / mediaResolution.height * mediaResolution.width
+            scaleX = expectedWidth / screenResolution.width
         }
 
-        // 计算缩放因子
-        val scaleX = targetWidth / mediaResolution.width
-        val scaleY = targetHeight / mediaResolution.height
-        val scale = minOf(scaleX, scaleY) // 选择较小的缩放因子，以保持画面比例
-
-        // 计算平移量，使画面居中
-        val translateX = (screenResolution.width - mediaResolution.width * scale) / 2f
-        val translateY = (screenResolution.height - mediaResolution.height * scale) / 2f
-
-        // TODO 这里其实算错了。
-
-        // 构建变换矩阵
-        Matrix.scaleM(matrix, 0, scaleX.toFloat(), 1f, 1f)
-//        Matrix.translateM(matrix, 0, translateX, translateY, 0f)
-//        matrix[0] = 0.2f
-//        matrix[5] = 0.2f
-//        matrix[12] = translateX
-//        matrix[13] = translateY
+//        Matrix.scaleM(matrix, 0, scaleX, scaleY, 1f)
+        Matrix.scaleM(matrix, 0, scaleX * 0.8f, scaleY * 0.8f, 1f)
     }
 
 
@@ -265,6 +264,7 @@ class TextureRender {
         // vec4: 向量4
         // aPosition 顶点坐标 -> uMVPMatrix 旋转拉伸
         // aTextureCoord 纹理顶点 -> uSTMatrix 旋转拉伸
+        // varying vTextureCoord: 意味着vTextureCoord 会被光栅化插值
         private const val VERTEX_SHADER = """
                 uniform mat4 uMVPMatrix;
                 uniform mat4 uSTMatrix;
@@ -278,6 +278,7 @@ class TextureRender {
                 """
 
         // vTextureCoord 是插值过的片元坐标, texture2D是一个vec4:rgba
+        // gl_FragColor可以看成是对应 gl_Position的颜色计算
         private const val FRAGMENT_SHADER = """
                 #extension GL_OES_EGL_image_external : require
                 precision mediump float;
@@ -285,6 +286,47 @@ class TextureRender {
                 uniform samplerExternalOES sTexture;
                 void main() {
                     gl_FragColor = texture2D(sTexture, vTextureCoord);
+                }
+                """
+
+        // 将画面平铺成上下
+        // TODO 一个猜想，如果 sTexture本身是90 rotated， 那么vTextureCoord里的值x和y就是互换的
+        // 甚至需要互倒的（1-x）
+        private const val TWO_TIMES_FRAGMENT_SHADER = """
+                #extension GL_OES_EGL_image_external : require
+                precision mediump float;
+                varying vec2 vTextureCoord;
+                uniform samplerExternalOES sTexture;
+                void main() {
+                    vec2 adjustedTextureCoord = vTextureCoord; 
+                    if (vTextureCoord.x < 0.5) {  
+                        adjustedTextureCoord.x += 0.25;  
+                    } else {  
+                        adjustedTextureCoord.x -= 0.25;  
+                    }  
+                    gl_FragColor = texture2D(sTexture, adjustedTextureCoord); 
+                }
+                """
+
+        // 将画面平铺成2x2
+        private const val FOUR_TIMES_FRAGMENT_SHADER = """
+                #extension GL_OES_EGL_image_external : require
+                precision mediump float;
+                varying vec2 vTextureCoord;
+                uniform samplerExternalOES sTexture;
+                void main() {
+                    vec2 adjustedTextureCoord = vTextureCoord;  
+                    if (vTextureCoord.x < 0.5) {  
+                        adjustedTextureCoord.x = adjustedTextureCoord.x*2.0;
+                    } else {  
+                        adjustedTextureCoord.x = (adjustedTextureCoord.x-0.5)*2.0;
+                    }  
+                    if (vTextureCoord.y < 0.5) {  
+                        adjustedTextureCoord.y = adjustedTextureCoord.y*2.0;
+                    } else {  
+                        adjustedTextureCoord.y = (adjustedTextureCoord.y-0.5)*2.0;
+                    }  
+                    gl_FragColor = texture2D(sTexture, adjustedTextureCoord); 
                 }
                 """
 
@@ -312,5 +354,58 @@ class TextureRender {
                     gl_FragColor =vec4(gray, gray, gray, 1.0);
                 }
                 """
+
+        private const val GAUSSIAN_VERTEX_SHADER = """
+                uniform mat4 uMVPMatrix;
+                uniform mat4 uSTMatrix;
+                attribute vec4 aPosition;
+                attribute vec4 aTextureCoord;
+                varying vec2 vTextureCoord;
+                varying vec2 blurCoordinates[9];
+                void main() {
+                  gl_Position = uMVPMatrix * aPosition;
+                  vTextureCoord = (uSTMatrix * aTextureCoord).xy;
+                  
+                  //横向和纵向的步长
+                  vec2 widthStep = vec2(10.0/2448.0, 0.0);
+                  vec2 heightStep = vec2(0.0, 10.0/3264.0);
+                  //计算出当前片段相邻像素的纹理坐标
+                  blurCoordinates[0] = vTextureCoord.xy - heightStep - widthStep; // 左上
+                  blurCoordinates[1] = vTextureCoord.xy - heightStep; // 上
+                  blurCoordinates[2] = vTextureCoord.xy - heightStep + widthStep; // 右上
+                  blurCoordinates[3] = vTextureCoord.xy - widthStep; // 左中
+                  blurCoordinates[4] = vTextureCoord.xy; // 中
+                  blurCoordinates[5] = vTextureCoord.xy + widthStep; // 右中
+                  blurCoordinates[6] = vTextureCoord.xy + heightStep - widthStep; // 左下
+                  blurCoordinates[7] = vTextureCoord.xy + heightStep; // 下
+                  blurCoordinates[8] = vTextureCoord.xy + heightStep + widthStep; // 右下
+                }
+                """
+
+        private const val GAUSSIAN_FRAGMENT_SHADER = """
+                #extension GL_OES_EGL_image_external : require
+                precision mediump float;
+                varying vec2 vTextureCoord;
+                varying vec2 blurCoordinates[9];
+                uniform samplerExternalOES sTexture;
+                mat3 kernelMatrix = mat3(
+                    0.0947416f, 0.118318f, 0.0947416f,
+                    0.118318f,  0.147761f, 0.118318f,
+                    0.0947416f, 0.118318f, 0.0947416f
+                );
+                void main() {
+                    vec4 sum = texture2D(sTexture, blurCoordinates[0]) * kernelMatrix[0][0];
+                    sum += texture2D(sTexture, blurCoordinates[1]) * kernelMatrix[0][1];
+                    sum += texture2D(sTexture, blurCoordinates[2]) * kernelMatrix[0][2];
+                    sum += texture2D(sTexture, blurCoordinates[3]) * kernelMatrix[1][0];
+                    sum += texture2D(sTexture, blurCoordinates[4]) * kernelMatrix[1][1];
+                    sum += texture2D(sTexture, blurCoordinates[5]) * kernelMatrix[1][2];
+                    sum += texture2D(sTexture, blurCoordinates[6]) * kernelMatrix[2][0];
+                    sum += texture2D(sTexture, blurCoordinates[7]) * kernelMatrix[2][1];
+                    sum += texture2D(sTexture, blurCoordinates[8]) * kernelMatrix[2][2];
+                    gl_FragColor = sum;
+//                    gl_FragColor = texture2D(sTexture, blurCoordinates[4]);
+                } 
+        """
     }
 }

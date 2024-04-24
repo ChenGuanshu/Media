@@ -21,13 +21,6 @@ class Camera2SurfaceView : SurfaceView {
         0,
     )
 
-    constructor(context: Context, attrs: AttributeSet, defStyleAttr: Int, defStyleRes: Int) : super(
-        context,
-        attrs,
-        defStyleAttr,
-        defStyleRes,
-    )
-
     fun updateSize(width: Int, height: Int) {
         Log.i(TAG, "updateSize: $width*$height")
         post {

@@ -3,6 +3,7 @@ package com.guanshu.media.camera
 import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.ImageFormat
+import android.graphics.SurfaceTexture
 import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraDevice
@@ -25,7 +26,11 @@ import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.disposables.Disposable
 import io.reactivex.rxjava3.subjects.BehaviorSubject
 import java.lang.Exception
+import java.util.ArrayList
+import java.util.Arrays
+import java.util.Scanner
 import java.util.UUID
+import kotlin.math.abs
 
 private const val TAG = "Camera2"
 
@@ -110,7 +115,7 @@ class Camera2(private val context: Context) {
             val cameraCharacteristics = cameraManager.getCameraCharacteristics(camera.toString())
             val map = cameraCharacteristics
                 .get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)!!
-            val sizes = map.getOutputSizes(SurfaceHolder::class.java)
+            val sizes = map.getOutputSizes(SurfaceTexture::class.java)
             orientation = getOrientation(cameraCharacteristics, deviceOrientation)
             previewSize = chooseSize(sizes, width, height, orientation)
             Log.i(TAG, "pick=$previewSize, support sizes = ${sizes.joinToString(",")}")
@@ -198,6 +203,8 @@ class Camera2(private val context: Context) {
                                     CaptureRequest.CONTROL_AE_MODE,
                                     CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH
                                 )
+                                // TODO
+//                                captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, 90)
                                 val request = previewRequestBuilder!!.build();
                                 session.setRepeatingBurst(listOf(request), null, cameraHandler)
                                 captureSessionSubject.onNext(Optional.of(session))
@@ -305,14 +312,28 @@ class Camera2(private val context: Context) {
 
     private fun chooseSize(sizes: Array<Size>, width: Int, height: Int, orientation: Int): Size {
         Log.i(TAG, "choose size for $width, $height, $orientation")
+        val options = arrayListOf<Size>()
         sizes.forEachIndexed { index, size ->
             val thisSize =
                 if (orientation == 90 || orientation == 270) Size(size.height, size.width) else size
-            if ((thisSize.width <= width && thisSize.height <= height) || index == sizes.lastIndex) {
-                return thisSize
+            if (thisSize.width >= width && thisSize.height >= height) {
+                options.add(thisSize)
             }
         }
-        throw RuntimeException("size not found")
+
+        val viewAspectRatio = width.toFloat() / height
+        var minAspectRatioDiff = Float.MAX_VALUE
+        var pick: Size? = null
+        options.forEachIndexed { index, size ->
+            val optionAspectRatio = size.width.toFloat() / size.height
+            val diff = abs(optionAspectRatio - viewAspectRatio)
+            if (diff < minAspectRatioDiff) {
+                minAspectRatioDiff = diff
+                pick = size
+            }
+        }
+
+        return pick ?: throw RuntimeException("size not found")
     }
 
     private fun getOrientation(

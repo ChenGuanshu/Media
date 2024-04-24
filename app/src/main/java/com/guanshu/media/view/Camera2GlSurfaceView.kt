@@ -34,7 +34,16 @@ class Camera2GlSurfaceView : GLSurfaceView {
             field = value
         }
     var cameraResolution = DefaultSize
-    val viewResolution by lazy { Size(width, height) }
+        set(value) {
+            Log.i(TAG, "set camera resolution=$value")
+//            surfaceTexture?.setDefaultBufferSize(value.width, value.height)
+            field = value
+        }
+    var viewResolution = DefaultSize
+        set(value) {
+            Log.i(TAG, "set view resolution=$value")
+            field = value
+        }
 
     private val renderer = object : Renderer {
         override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
@@ -56,7 +65,13 @@ class Camera2GlSurfaceView : GLSurfaceView {
 
         override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
             Log.i(TAG, "onSurfaceChanged $width, $height")
+            // 可以通过调整viewport的大小，来调整输出的视频大小
+//            GLES20.glViewport(100, 100, width-200, height-200)
             GLES20.glViewport(0, 0, width, height)
+
+            // 控制camera的输出buffer，不设置的话分辨率会比较低
+            surfaceTexture?.setDefaultBufferSize(width, height)
+            viewResolution = Size(width, height)
         }
 
         override fun onDrawFrame(gl: GL10?) {
@@ -67,6 +82,36 @@ class Camera2GlSurfaceView : GLSurfaceView {
                     cameraResolution,
                     viewResolution,
                 )
+
+                // TODO 再研究下如何画 2*2
+//                val newResolution = Size(viewResolution.width / 2, viewResolution.height / 2)
+//                GLES20.glViewport(0, 0, width / 2, height / 2)
+//                textureRender.drawFrame(
+//                    surfaceTexture!!,
+//                    cameraResolution,
+//                    newResolution,
+//                )
+
+//                GLES20.glViewport(width / 2, height / 2, width, height)
+//                textureRender.drawFrame(
+//                    surfaceTexture!!,
+//                    cameraResolution,
+//                    newResolution,
+//                )
+//
+//                GLES20.glViewport(0, height / 2, width/2, height)
+//                textureRender.drawFrame(
+//                    surfaceTexture!!,
+//                    cameraResolution,
+//                    newResolution,
+//                )
+//
+//                GLES20.glViewport(width / 2, 0, width, height/2)
+//                textureRender.drawFrame(
+//                    surfaceTexture!!,
+//                    cameraResolution,
+//                    newResolution,
+//                )
             }
         }
     }
