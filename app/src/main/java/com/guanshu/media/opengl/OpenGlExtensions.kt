@@ -5,6 +5,9 @@ import android.util.Log
 
 private const val TAG = "OpenGL"
 
+const val FLOAT_SIZE_BYTES = 4
+const val INT_SIZE_BYTES = 4
+
 private fun loadShader(shaderType: Int, source: String): Int {
     var shader = GLES20.glCreateShader(shaderType)
     checkGlError("glCreateShader type=$shaderType")

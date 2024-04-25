@@ -6,6 +6,7 @@ import android.opengl.GLES20
 import android.opengl.Matrix
 import android.util.Log
 import android.util.Size
+import com.guanshu.media.opengl.filters.FlattenFilter
 import com.guanshu.media.opengl.filters.SingleTextureFilter
 
 private const val TAG = "TextureRender"
@@ -14,6 +15,7 @@ class TextureRender {
 
     private val stMatrix = FloatArray(16)
     private val filter = SingleTextureFilter()
+//    private val filter = FlattenFilter()
     private var init = false
 
     var textureId = -12345
@@ -72,6 +74,7 @@ class TextureRender {
         filter.render(textureId, stMatrix, mediaResolution, screenResolution)
     }
 
+    // Deprecated: move to other filter
     companion object {
 
         // 将画面平铺成上下

@@ -3,21 +3,22 @@ package com.guanshu.media.opengl.filters
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.opengl.Matrix
+import android.util.Log
 import android.util.Size
+import com.guanshu.media.opengl.FLOAT_SIZE_BYTES
 import com.guanshu.media.opengl.checkGlError
 import com.guanshu.media.opengl.getAtrribLocation
 import com.guanshu.media.opengl.getUniformLocation
 import com.guanshu.media.utils.DefaultSize
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.nio.FloatBuffer
 
 // mat4: 4x4 矩阵
 // vec4: 向量4
 // aPosition 顶点坐标 -> uMVPMatrix 旋转拉伸
 // aTextureCoord 纹理顶点 -> uSTMatrix 旋转拉伸
 // varying vTextureCoord: 意味着vTextureCoord 会被光栅化插值
-private const val VERTEX_SHADER = """
+const val VERTEX_SHADER = """
                 uniform mat4 uMVPMatrix;
                 uniform mat4 uSTMatrix;
                 attribute vec4 aPosition;
@@ -31,7 +32,7 @@ private const val VERTEX_SHADER = """
 
 // vTextureCoord 是插值过的片元坐标, texture2D是一个vec4:rgba
 // gl_FragColor可以看成是对应 gl_Position的颜色计算
-private const val FRAGMENT_SHADER = """
+const val FRAGMENT_SHADER = """
                 #extension GL_OES_EGL_image_external : require
                 precision mediump float;
                 varying vec2 vTextureCoord;
@@ -41,46 +42,75 @@ private const val FRAGMENT_SHADER = """
                 }
                 """
 
-private const val FLOAT_SIZE_BYTES = 4
-private const val TRIANGLE_VERTICES_DATA_STRIDE_BYTES = 5 * FLOAT_SIZE_BYTES
-private const val TRIANGLE_VERTICES_DATA_POS_OFFSET = 0
-private const val TRIANGLE_VERTICES_DATA_UV_OFFSET = 3
+// 顶点坐标和纹理坐标
+private val verticesData = floatArrayOf(
+    // X, Y, Z, U, V
+    -1.0f, -1.0f, 0f, 0f, 0f,
+    1.0f, -1.0f, 0f, 1f, 0f,
+    -1.0f, 1.0f, 0f, 0f, 1f,
+    1.0f, 1.0f, 0f, 1f, 1f,
+)
 
+private const val TAG = "SingleTextureFilter"
+
+/**
+ * 渲染texture
+ */
 class SingleTextureFilter : BaseFilter(
     VERTEX_SHADER,
     FRAGMENT_SHADER,
 ) {
 
-    private val vertices: FloatBuffer
+    private val vertexVbos = IntArray(1)
     private val mvpMatrix = FloatArray(16)
-
     private var mvpMatrixHandle = 0
     private var stMatrixHandle = 0
     private var aPositionHandle = 0
     private var aTextureHandle = 0
 
-    init {
-        // 顶点坐标和纹理坐标
-        val verticesData = floatArrayOf(
-            // X, Y, Z, U, V
-            -1.0f, -1.0f, 0f, 0f, 0f,
-            1.0f, -1.0f, 0f, 1f, 0f,
-            -1.0f, 1.0f, 0f, 0f, 1f,
-            1.0f, 1.0f, 0f, 1f, 1f,
-        )
-        vertices = ByteBuffer.allocateDirect(verticesData.size * FLOAT_SIZE_BYTES)
-            .order(ByteOrder.nativeOrder())
-            .asFloatBuffer()
-
-        vertices.put(verticesData).position(0)
-    }
 
     override fun init() {
         super.init()
+        Log.i(TAG, "call init")
         aPositionHandle = program.getAtrribLocation("aPosition")
         mvpMatrixHandle = program.getUniformLocation("uMVPMatrix")
         aTextureHandle = program.getAtrribLocation("aTextureCoord")
         stMatrixHandle = program.getUniformLocation("uSTMatrix")
+
+        val vertices = ByteBuffer.allocateDirect(verticesData.size * FLOAT_SIZE_BYTES)
+            .order(ByteOrder.nativeOrder())
+            .asFloatBuffer()
+        vertices.put(verticesData).position(0)
+
+        GLES20.glGenBuffers(1, vertexVbos, 0)
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vertexVbos[0])
+        GLES20.glBufferData(
+            GLES20.GL_ARRAY_BUFFER,
+            verticesData.size * FLOAT_SIZE_BYTES,
+            vertices,
+            GLES20.GL_STATIC_DRAW
+        )
+        GLES20.glVertexAttribPointer(
+            aPositionHandle,
+            3,
+            GLES20.GL_FLOAT,
+            false,
+            5 * FLOAT_SIZE_BYTES,
+            0,
+        )
+        GLES20.glVertexAttribPointer(
+            aTextureHandle,
+            2,
+            GLES20.GL_FLOAT,
+            false,
+            5 * FLOAT_SIZE_BYTES,
+            3 * FLOAT_SIZE_BYTES
+        )
+        GLES20.glEnableVertexAttribArray(aPositionHandle)
+        GLES20.glEnableVertexAttribArray(aTextureHandle)
+
+//        数据传输完就解绑
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
     }
 
     override fun render(
@@ -96,24 +126,8 @@ class SingleTextureFilter : BaseFilter(
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId)
 
-        vertices.position(TRIANGLE_VERTICES_DATA_POS_OFFSET)
-        GLES20.glVertexAttribPointer(
-            aPositionHandle, 3, GLES20.GL_FLOAT, false,
-            TRIANGLE_VERTICES_DATA_STRIDE_BYTES, vertices
-        )
-        checkGlError("glVertexAttribPointer aPosition")
-        GLES20.glEnableVertexAttribArray(aPositionHandle)
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vertexVbos[0])
 
-        checkGlError("glEnableVertexAttribArray maPositionHandle")
-        vertices.position(TRIANGLE_VERTICES_DATA_UV_OFFSET)
-        GLES20.glVertexAttribPointer(
-            aTextureHandle, 2, GLES20.GL_FLOAT, false,
-            TRIANGLE_VERTICES_DATA_STRIDE_BYTES, vertices
-        )
-        checkGlError("glVertexAttribPointer maTextureHandle")
-        GLES20.glEnableVertexAttribArray(aTextureHandle)
-
-        checkGlError("glEnableVertexAttribArray maTextureHandle")
         Matrix.setIdentityM(mvpMatrix, 0)
         adjustTransformMatrix(mvpMatrix, mediaResolution, screenResolution)
 
@@ -126,7 +140,8 @@ class SingleTextureFilter : BaseFilter(
 
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         checkGlError("glDrawArrays")
-        GLES20.glFinish()
+
+        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
     }
 
     /**
