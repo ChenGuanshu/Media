@@ -6,41 +6,13 @@ import android.opengl.Matrix
 import android.util.Log
 import android.util.Size
 import com.guanshu.media.opengl.FLOAT_SIZE_BYTES
+import com.guanshu.media.opengl.OesTextureProgram
 import com.guanshu.media.opengl.checkGlError
 import com.guanshu.media.opengl.getAtrribLocation
 import com.guanshu.media.opengl.getUniformLocation
 import com.guanshu.media.utils.DefaultSize
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-
-// mat4: 4x4 矩阵
-// vec4: 向量4
-// aPosition 顶点坐标 -> uMVPMatrix 旋转拉伸
-// aTextureCoord 纹理顶点 -> uSTMatrix 旋转拉伸
-// varying vTextureCoord: 意味着vTextureCoord 会被光栅化插值
-const val VERTEX_SHADER = """
-                uniform mat4 uMVPMatrix;
-                uniform mat4 uSTMatrix;
-                attribute vec4 aPosition;
-                attribute vec4 aTextureCoord;
-                varying vec2 vTextureCoord;
-                void main() {
-                  gl_Position = uMVPMatrix * aPosition;
-                  vTextureCoord = (uSTMatrix * aTextureCoord).xy;
-                }
-                """
-
-// vTextureCoord 是插值过的片元坐标, texture2D是一个vec4:rgba
-// gl_FragColor可以看成是对应 gl_Position的颜色计算
-const val FRAGMENT_SHADER = """
-                #extension GL_OES_EGL_image_external : require
-                precision mediump float;
-                varying vec2 vTextureCoord;
-                uniform samplerExternalOES sTexture;
-                void main() {
-                    gl_FragColor = texture2D(sTexture, vTextureCoord);
-                }
-                """
 
 // 顶点坐标和纹理坐标
 private val verticesData = floatArrayOf(
@@ -57,8 +29,8 @@ private const val TAG = "SingleTextureFilter"
  * 渲染texture
  */
 class SingleTextureFilter : BaseFilter(
-    VERTEX_SHADER,
-    FRAGMENT_SHADER,
+    OesTextureProgram.VERTEX_SHADER,
+    OesTextureProgram.FRAGMENT_SHADER,
 ) {
 
     private val vertexVbos = IntArray(1)

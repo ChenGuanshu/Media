@@ -7,15 +7,19 @@ import android.opengl.Matrix
 import android.util.Log
 import android.util.Size
 import com.guanshu.media.opengl.filters.FlattenFilter
+import com.guanshu.media.opengl.filters.FlattenWithImageFilter
 import com.guanshu.media.opengl.filters.SingleTextureFilter
+import com.guanshu.media.opengl.filters.TextureWithImageFilter
 
 private const val TAG = "TextureRender"
 
 class TextureRender {
 
     private val stMatrix = FloatArray(16)
-    private val filter = SingleTextureFilter()
-//    private val filter = FlattenFilter()
+
+    //    private val filter = SingleTextureFilter()
+    private val filter = FlattenWithImageFilter()
+//    private val filter = TextureWithImageFilter()
     private var init = false
 
     var textureId = -12345
@@ -31,27 +35,8 @@ class TextureRender {
         Log.i(TAG, "init")
         // 设置 texture
         val textures = IntArray(1)
-        GLES20.glGenTextures(1, textures, 0)
+        newTexture(textures)
         textureId = textures[0]
-        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId)
-        checkGlError("glBindTexture mTextureID")
-        GLES20.glTexParameterf(
-            GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MIN_FILTER,
-            GLES20.GL_NEAREST.toFloat()
-        )
-        GLES20.glTexParameterf(
-            GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_MAG_FILTER,
-            GLES20.GL_LINEAR.toFloat()
-        )
-        GLES20.glTexParameteri(
-            GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_S,
-            GLES20.GL_CLAMP_TO_EDGE
-        )
-        GLES20.glTexParameteri(
-            GLES11Ext.GL_TEXTURE_EXTERNAL_OES, GLES20.GL_TEXTURE_WRAP_T,
-            GLES20.GL_CLAMP_TO_EDGE
-        )
-        checkGlError("glTexParameter")
 
         filter.init()
     }

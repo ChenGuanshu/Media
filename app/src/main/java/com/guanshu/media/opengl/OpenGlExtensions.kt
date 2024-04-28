@@ -1,5 +1,6 @@
 package com.guanshu.media.opengl
 
+import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.util.Log
 
@@ -79,5 +80,30 @@ fun checkGlError(op: String) {
     while (GLES20.glGetError().also { error = it } != GLES20.GL_NO_ERROR) {
         Log.e(TAG, "$op: glError $error")
         throw RuntimeException("$op: glError $error")
+    }
+}
+
+fun newTexture(textures: IntArray, textureTarget: Int = GLES11Ext.GL_TEXTURE_EXTERNAL_OES) {
+    GLES20.glGenTextures(textures.size, textures, 0)
+    textures.forEach { textureId ->
+        GLES20.glBindTexture(textureTarget, textureId)
+        checkGlError("glBindTexture mTextureID")
+        GLES20.glTexParameterf(
+            textureTarget, GLES20.GL_TEXTURE_MIN_FILTER,
+            GLES20.GL_NEAREST.toFloat()
+        )
+        GLES20.glTexParameterf(
+            textureTarget, GLES20.GL_TEXTURE_MAG_FILTER,
+            GLES20.GL_LINEAR.toFloat()
+        )
+        GLES20.glTexParameteri(
+            textureTarget, GLES20.GL_TEXTURE_WRAP_S,
+            GLES20.GL_CLAMP_TO_EDGE
+        )
+        GLES20.glTexParameteri(
+            textureTarget, GLES20.GL_TEXTURE_WRAP_T,
+            GLES20.GL_CLAMP_TO_EDGE
+        )
+        checkGlError("glTexParameter")
     }
 }
