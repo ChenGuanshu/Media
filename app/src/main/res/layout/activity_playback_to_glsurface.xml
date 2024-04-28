@@ -5,7 +5,7 @@
     android:orientation="vertical">
 
     <com.guanshu.media.view.SingleSourceGlSurfaceView
-        android:id="@+id/glsurface_camera"
+        android:id="@+id/glsurface_playback"
         android:layout_width="match_parent"
         android:layout_height="500dp"
         android:layout_gravity="center_horizontal" />

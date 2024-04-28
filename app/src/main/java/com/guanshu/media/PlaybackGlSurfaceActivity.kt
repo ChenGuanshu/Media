@@ -1,0 +1,73 @@
+package com.guanshu.media
+
+import android.net.Uri
+import android.os.Bundle
+import android.util.Log
+import android.util.Size
+import androidx.activity.ComponentActivity
+import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.Format
+import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.PlaybackException
+import com.google.android.exoplayer2.Player
+import com.google.android.exoplayer2.analytics.AnalyticsListener
+import com.guanshu.media.view.SingleSourceGlSurfaceView
+
+private const val TAG = "PlaybackGlSurfaceActivity"
+private const val VIDEO_PATH = "/sdcard/DCIM/Camera/lv_0_20240122222838.mp4"
+
+class PlaybackGlSurfaceActivity : ComponentActivity(), Player.Listener {
+
+    private lateinit var surfaceView: SingleSourceGlSurfaceView
+    private var player: ExoPlayer? = null
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_playback_to_glsurface)
+        surfaceView = findViewById(R.id.glsurface_playback)
+
+        val player = ExoPlayer.Builder(this.applicationContext).build()
+        player.setMediaItem(MediaItem.fromUri(Uri.parse(VIDEO_PATH)))
+        player.prepare()
+        player.repeatMode = ExoPlayer.REPEAT_MODE_ALL
+        player.addListener(this)
+        player.addAnalyticsListener(object : AnalyticsListener {
+            override fun onVideoInputFormatChanged(
+                eventTime: AnalyticsListener.EventTime,
+                format: Format
+            ) {
+                super.onVideoInputFormatChanged(eventTime, format)
+                Log.i(TAG, "input format=$format")
+                val size = when (format.rotationDegrees) {
+                    90, 270 -> Size(format.height, format.width)
+                    else -> Size(format.width, format.height)
+                }
+                surfaceView.mediaResolution = size
+            }
+        })
+
+        this.player = player
+    }
+
+    override fun onPlayerError(error: PlaybackException) {
+        Log.e(TAG, "onPlayerError", error)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.i(TAG, "onResume")
+        surfaceView.onSurfaceCreate = { surface ->
+            surfaceView.post {
+                this.player?.setVideoSurface(surface)
+                this.player?.playWhenReady = true
+            }
+        }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        Log.i(TAG, "onPause")
+        this.player?.playWhenReady = false
+        this.player?.setVideoSurface(null)
+    }
+}
