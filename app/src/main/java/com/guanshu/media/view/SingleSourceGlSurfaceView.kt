@@ -17,7 +17,7 @@ import javax.microedition.khronos.opengles.GL10
 
 private const val TAG = "Camera2GlSurfaceView"
 
-class Camera2GlSurfaceView : GLSurfaceView {
+class SingleSourceGlSurfaceView : GLSurfaceView {
 
     constructor(context: Context) : super(context, null)
     constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
@@ -33,7 +33,7 @@ class Camera2GlSurfaceView : GLSurfaceView {
             }
             field = value
         }
-    var cameraResolution = DefaultSize
+    var mediaResolution = DefaultSize
         set(value) {
             Log.i(TAG, "set camera resolution=$value")
 //            surfaceTexture?.setDefaultBufferSize(value.width, value.height)
@@ -79,7 +79,7 @@ class Camera2GlSurfaceView : GLSurfaceView {
                 surfaceTexture?.updateTexImage()
                 textureRender.drawFrame(
                     surfaceTexture!!,
-                    cameraResolution,
+                    mediaResolution,
                     viewResolution,
                 )
 

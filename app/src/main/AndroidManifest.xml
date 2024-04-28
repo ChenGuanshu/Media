@@ -39,6 +39,7 @@
 
         <activity android:name=".Camera2SurfaceActivity" />
         <activity android:name=".Camera2GlSurfaceActivity" />
+        <activity android:name=".PlaybackGlSurfaceActivity" />
 
     </application>
 

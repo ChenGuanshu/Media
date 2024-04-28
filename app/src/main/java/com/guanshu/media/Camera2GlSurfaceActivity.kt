@@ -5,13 +5,13 @@ import android.util.Log
 import android.util.Size
 import androidx.activity.ComponentActivity
 import com.guanshu.media.application.GlobalDependency
-import com.guanshu.media.view.Camera2GlSurfaceView
+import com.guanshu.media.view.SingleSourceGlSurfaceView
 
 private const val TAG = "Camera2GlSurfaceActivity"
 
 class Camera2GlSurfaceActivity : ComponentActivity() {
 
-    private lateinit var surfaceView: Camera2GlSurfaceView
+    private lateinit var surfaceView: SingleSourceGlSurfaceView
     private val camera2 get() = GlobalDependency.camera2
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,7 +25,7 @@ class Camera2GlSurfaceActivity : ComponentActivity() {
         Log.i(TAG, "onResume")
         surfaceView.onSurfaceCreate = { surface ->
             camera2.openCamera(surfaceView.width, surfaceView.height) { newWidth, newHeight ->
-                surfaceView.cameraResolution = Size(newWidth, newHeight)
+                surfaceView.mediaResolution = Size(newWidth, newHeight)
             }
             camera2.startPreview(surface)
         }

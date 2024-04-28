@@ -17,7 +17,8 @@ class TextureRender {
 
     private val stMatrix = FloatArray(16)
 
-    //    private val filter = SingleTextureFilter()
+    // TODO support changing
+//    private var filter = SingleTextureFilter()
     private val filter = FlattenWithImageFilter()
 //    private val filter = TextureWithImageFilter()
     private var init = false
