@@ -1,6 +1,9 @@
 package com.guanshu.media.opengl.filters
 
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.opengl.GLES11Ext
+import android.opengl.GLES20
 import android.opengl.GLES20.GL_ARRAY_BUFFER
 import android.opengl.GLES20.GL_COLOR_BUFFER_BIT
 import android.opengl.GLES20.GL_DEPTH_BUFFER_BIT
@@ -9,7 +12,6 @@ import android.opengl.GLES20.GL_FLOAT
 import android.opengl.GLES20.GL_STATIC_DRAW
 import android.opengl.GLES20.GL_TEXTURE0
 import android.opengl.GLES20.GL_TRIANGLES
-import android.opengl.GLES20.GL_TRIANGLE_STRIP
 import android.opengl.GLES20.GL_UNSIGNED_INT
 import android.opengl.GLES20.glActiveTexture
 import android.opengl.GLES20.glBindBuffer
@@ -17,24 +19,30 @@ import android.opengl.GLES20.glBindTexture
 import android.opengl.GLES20.glBufferData
 import android.opengl.GLES20.glClear
 import android.opengl.GLES20.glClearColor
-import android.opengl.GLES20.glDrawArrays
+import android.opengl.GLES20.glDisableVertexAttribArray
 import android.opengl.GLES20.glDrawElements
 import android.opengl.GLES20.glEnableVertexAttribArray
 import android.opengl.GLES20.glGenBuffers
 import android.opengl.GLES20.glUniformMatrix4fv
 import android.opengl.GLES20.glUseProgram
 import android.opengl.GLES20.glVertexAttribPointer
+import android.opengl.GLUtils
 import android.opengl.Matrix
+import android.util.Log
 import android.util.Size
 import com.guanshu.media.opengl.FLOAT_SIZE_BYTES
 import com.guanshu.media.opengl.INT_SIZE_BYTES
+import com.guanshu.media.opengl.ImageTextureProgram
 import com.guanshu.media.opengl.OesTextureProgram
 import com.guanshu.media.opengl.checkGlError
+import com.guanshu.media.opengl.createProgram
 import com.guanshu.media.opengl.getAtrribLocation
 import com.guanshu.media.opengl.getUniformLocation
+import com.guanshu.media.opengl.newTexture
 import com.guanshu.media.utils.DefaultSize
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.nio.FloatBuffer
 import java.nio.IntBuffer
 
 // 顶点坐标
@@ -54,23 +62,25 @@ private val vertexCoord = floatArrayOf(
     -1.0f, 1.0f, 0f, 0f, 1f,
     0.0f, 1.0f, 0f, 1f, 1f,
 
+
+    )
+
+private val vertexIndex = intArrayOf(
+    0, 1, 2, 1, 2, 3,
+    4, 5, 6, 5, 6, 7,
+    8, 9, 10, 9, 10, 11,
+)
+
+private val imageVertexCoord = floatArrayOf(
     0.0f, 0.0f, 0f, 0f, 0f,
     1.0f, 0.0f, 0f, 1f, 0f,
     0.0f, 1.0f, 0f, 0f, 1f,
     1.0f, 1.0f, 0f, 1f, 1f,
 )
 
-private val vertexIndex = intArrayOf(
-    0, 1, 2, 1, 2, 3,
-    4, 5, 6, 5, 6, 7,
-    8, 9, 10, 9, 10, 11,
-    12, 13, 14, 13, 14, 15,
-)
+private const val TAG = "FlattenWithImageFilter"
 
-/**
- * 将画面平铺成 2*2， 使用绘制4个矩形的方式完成
- */
-class FlattenFilter : BaseFilter(
+class FlattenWithImageFilter : BaseFilter(
     OesTextureProgram.VERTEX_SHADER,
     OesTextureProgram.FRAGMENT_SHADER,
 ) {
@@ -87,10 +97,20 @@ class FlattenFilter : BaseFilter(
 
     private lateinit var indexBuffer: IntBuffer
 
+    private lateinit var bitmap: Bitmap
+    private lateinit var imageVertexBuffer: FloatBuffer
+    private var bitmapTexture: Int = -12345
+    private var bitmapProgram: Int = 0
+    private val imageMvpMatrix = FloatArray(16)
+    private val imageTextureMatrix = FloatArray(16)
+
     override fun init() {
         super.init()
-        // 纹理坐标
+        initOesTexture()
+        initImageTexture()
+    }
 
+    private fun initOesTexture() {
         aPositionHandle = program.getAtrribLocation("aPosition")
         mvpMatrixHandle = program.getUniformLocation("uMVPMatrix")
         aTextureHandle = program.getAtrribLocation("aTextureCoord")
@@ -128,6 +148,34 @@ class FlattenFilter : BaseFilter(
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
     }
 
+    private fun initImageTexture() {
+        val stream = this.javaClass.getResourceAsStream("/res/drawable/pikachu.png")
+        bitmap = BitmapFactory
+            .decodeStream(stream)
+
+        val textures = IntArray(1)
+        newTexture(textures, GLES20.GL_TEXTURE_2D)
+        bitmapTexture = textures[0]
+        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
+        checkGlError("texImage2D")
+
+        Log.i(TAG, "initBitmapTexture $bitmapTexture, ${bitmap.width},${bitmap.height}")
+
+        bitmapProgram = createProgram(
+            ImageTextureProgram.VERTEX_SHADER,
+            ImageTextureProgram.FRAGMENT_SHADER,
+        )
+        if (bitmapProgram == 0) {
+            throw RuntimeException("failed creating program")
+        }
+        Log.i(TAG, "initBitmapTexture, bitmapProgram=$bitmapProgram")
+
+        imageVertexBuffer = ByteBuffer.allocateDirect(imageVertexCoord.size * FLOAT_SIZE_BYTES)
+            .order(ByteOrder.nativeOrder())
+            .asFloatBuffer()
+        imageVertexBuffer.put(imageVertexCoord).position(0)
+    }
+
     override fun render(
         textureId: Int,
         textMatrix: FloatArray,
@@ -136,10 +184,24 @@ class FlattenFilter : BaseFilter(
     ) {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
         glClear(GL_DEPTH_BUFFER_BIT or GL_COLOR_BUFFER_BIT)
+
+        renderOesTexture(textureId, textMatrix, mediaResolution, screenResolution)
+        renderImageTexture()
+    }
+
+    private fun renderOesTexture(
+        textureId: Int,
+        textMatrix: FloatArray,
+        mediaResolution: Size,
+        screenResolution: Size
+    ) {
         glUseProgram(program)
         checkGlError("glUseProgram")
+
+        val sTextureHandle = bitmapProgram.getUniformLocation("sTexture")
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId)
+        GLES20.glUniform1i(sTextureHandle, 0)
 
         Matrix.setIdentityM(mvpMatrix, 0)
         adjustTransformMatrix(mvpMatrix, mediaResolution, screenResolution)
@@ -169,22 +231,58 @@ class FlattenFilter : BaseFilter(
         glEnableVertexAttribArray(aPositionHandle)
         glEnableVertexAttribArray(aTextureHandle)
 
-        // 1： 4个矩形分开画
-//        glDrawArrays(GL_TRIANGLE_STRIP, 0, 4)  // 第一个矩形
-//        glDrawArrays(GL_TRIANGLE_STRIP, 4, 4)  // 第二个矩形
-//        glDrawArrays(GL_TRIANGLE_STRIP, 8, 4)  // 第三个矩形
-//        glDrawArrays(GL_TRIANGLE_STRIP, 12, 4) // 第四个矩形
-
-        // 2: 用 index buffer 直接画，有一次 cpu -> gpu 的index传递
-//        glDrawElements(GL_TRIANGLES, vertexIndex.size, GL_UNSIGNED_INT, indexBuffer)
-
-        // 3. 用ebo 传输顶点 index
         glDrawElements(GL_TRIANGLES, vertexIndex.size, GL_UNSIGNED_INT, 0)
 
         checkGlError("glDrawArrays")
 
         glBindBuffer(GL_ARRAY_BUFFER, 0)
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0)
+    }
+
+    private fun renderImageTexture() {
+        glUseProgram(bitmapProgram)
+        checkGlError("glUseProgram")
+
+        val aPositionHandle = bitmapProgram.getAtrribLocation("aPosition")
+        val mvpMatrixHandle = bitmapProgram.getUniformLocation("uMVPMatrix")
+        val aTextureHandle = bitmapProgram.getAtrribLocation("aTextureCoord")
+        val stMatrixHandle = bitmapProgram.getUniformLocation("uSTMatrix")
+        val sTextureHandle = bitmapProgram.getUniformLocation("sTexture")
+
+        glActiveTexture(GLES20.GL_TEXTURE1)
+        glBindTexture(GLES20.GL_TEXTURE_2D, bitmapTexture)
+        GLES20.glUniform1i(sTextureHandle, 1)
+        checkGlError("glUniform1i")
+
+        imageVertexBuffer.position(0)
+        glVertexAttribPointer(
+            aPositionHandle, 3, GL_FLOAT, false,
+            5 * FLOAT_SIZE_BYTES, imageVertexBuffer
+        )
+        checkGlError("glVertexAttribPointer aPosition")
+        glEnableVertexAttribArray(aPositionHandle)
+
+        checkGlError("glEnableVertexAttribArray maPositionHandle")
+        imageVertexBuffer.position(3)
+        glVertexAttribPointer(
+            aTextureHandle, 2, GL_FLOAT, false,
+            5 * FLOAT_SIZE_BYTES, imageVertexBuffer
+        )
+        checkGlError("glVertexAttribPointer maTextureHandle")
+
+        glEnableVertexAttribArray(aTextureHandle)
+
+        Matrix.setIdentityM(imageMvpMatrix, 0)
+        Matrix.setIdentityM(imageTextureMatrix, 0)
+
+        glUniformMatrix4fv(mvpMatrixHandle, 1, false, imageMvpMatrix, 0)
+        glUniformMatrix4fv(stMatrixHandle, 1, false, imageTextureMatrix, 0)
+
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
+        checkGlError("glDrawArrays")
+
+        glDisableVertexAttribArray(aPositionHandle)
+        glDisableVertexAttribArray(aTextureHandle)
     }
 
     /**
