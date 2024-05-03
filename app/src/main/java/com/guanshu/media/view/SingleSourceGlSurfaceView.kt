@@ -4,6 +4,7 @@ import android.content.Context
 import android.graphics.SurfaceTexture
 import android.opengl.GLES20
 import android.opengl.GLSurfaceView
+import android.opengl.Matrix
 import android.util.AttributeSet
 import android.util.Log
 import android.util.Size
@@ -15,13 +16,14 @@ import java.util.concurrent.atomic.AtomicBoolean
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
 
-private const val TAG = "Camera2GlSurfaceView"
+private const val TAG = "SingleSourceGlSurfaceView"
 
 class SingleSourceGlSurfaceView : GLSurfaceView {
 
     constructor(context: Context) : super(context, null)
     constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
 
+    private val stMatrix = FloatArray(16)
     private var surfaceTexture: SurfaceTexture? = null
     private var surface: Surface? = null
     private val frameAvailable = AtomicBoolean(false)
@@ -77,47 +79,19 @@ class SingleSourceGlSurfaceView : GLSurfaceView {
         override fun onDrawFrame(gl: GL10?) {
             if (frameAvailable.compareAndSet(true, false)) {
                 surfaceTexture?.updateTexImage()
+                Matrix.setIdentityM(stMatrix, 0)
+                surfaceTexture?.getTransformMatrix(stMatrix)
                 textureRender.drawFrame(
                     surfaceTexture!!,
+                    stMatrix,
                     mediaResolution,
                     viewResolution,
                 )
-
-                // TODO 再研究下如何画 2*2
-//                val newResolution = Size(viewResolution.width / 2, viewResolution.height / 2)
-//                GLES20.glViewport(0, 0, width / 2, height / 2)
-//                textureRender.drawFrame(
-//                    surfaceTexture!!,
-//                    cameraResolution,
-//                    newResolution,
-//                )
-
-//                GLES20.glViewport(width / 2, height / 2, width, height)
-//                textureRender.drawFrame(
-//                    surfaceTexture!!,
-//                    cameraResolution,
-//                    newResolution,
-//                )
-//
-//                GLES20.glViewport(0, height / 2, width/2, height)
-//                textureRender.drawFrame(
-//                    surfaceTexture!!,
-//                    cameraResolution,
-//                    newResolution,
-//                )
-//
-//                GLES20.glViewport(width / 2, 0, width, height/2)
-//                textureRender.drawFrame(
-//                    surfaceTexture!!,
-//                    cameraResolution,
-//                    newResolution,
-//                )
             }
         }
     }
 
     init {
-        Log.i(TAG, "init")
         setEGLContextClientVersion(2)
         setEGLConfigChooser(
             /* redSize= */8,

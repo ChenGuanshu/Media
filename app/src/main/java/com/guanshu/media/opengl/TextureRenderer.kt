@@ -15,12 +15,12 @@ private const val TAG = "TextureRender"
 
 class TextureRender {
 
-    private val stMatrix = FloatArray(16)
 
     // TODO support changing
 //    private var filter = SingleTextureFilter()
     private val filter = FlattenWithImageFilter()
-//    private val filter = TextureWithImageFilter()
+
+    //    private val filter = TextureWithImageFilter()
     private var init = false
 
     var textureId = -12345
@@ -44,12 +44,12 @@ class TextureRender {
 
     fun drawFrame(
         surfaceTexture: SurfaceTexture,
+        textureMatrix: FloatArray,
         mediaResolution: Size,
         screenResolution: Size,
     ) {
         checkGlError("onDrawFrame start")
-        Matrix.setIdentityM(stMatrix, 0)
-        surfaceTexture.getTransformMatrix(stMatrix)
+
         /**
          * 0.0, -1.0, 0.0, 0.0,
          * 1.0,  0.0, 0.0, 0.0,
@@ -57,7 +57,7 @@ class TextureRender {
          * 0.0,  1.0, 0.0, 1.0
          * 这是一个st matrix的例子，表示了顺时针调整了90度，用来将纹理的内容正向
          */
-        filter.render(textureId, stMatrix, mediaResolution, screenResolution)
+        filter.render(textureId, textureMatrix, mediaResolution, screenResolution)
     }
 
     // Deprecated: move to other filter
