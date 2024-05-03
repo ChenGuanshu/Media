@@ -45,6 +45,49 @@ object ImageTextureProgram {
                 """
 }
 
+object TwoOesTexture2Program {
+    const val VERTEX_SHADER = """
+                uniform mat4 uSTMatrix1;
+                uniform mat4 uSTMatrix2;
+                attribute vec4 aPosition;
+                attribute vec4 aTextureCoord;
+                varying vec2 vTextureCoord1;
+                varying vec2 vTextureCoord2;
+                varying float left;
+                void main() {
+                  gl_Position = aPosition;
+                  vTextureCoord1 = (uSTMatrix1 * aTextureCoord).xy;
+                  vTextureCoord2 = (uSTMatrix2 * aTextureCoord).xy;
+                  
+                  if(aPosition.x <= 0.0){
+                    left = 1.0;
+                  } else {
+                    left = 0.0;
+                  }
+                }
+                """
+
+    const val FRAGMENT_SHADER = """
+                #extension GL_OES_EGL_image_external : require
+                precision mediump float;
+                varying vec2 vTextureCoord1;
+                varying vec2 vTextureCoord2;
+                varying float left;
+                uniform samplerExternalOES sTexture1;
+                uniform samplerExternalOES sTexture2;
+                void main() {
+                    vec4 color1 = texture2D(sTexture1, vTextureCoord1);
+                    vec4 color2 = texture2D(sTexture2, vTextureCoord2);
+                    // 不理解为什么是 1.0 而不是 0.5 TODO investigate
+                    if(left >= 1.0){
+                        gl_FragColor = color1;
+                    }else{
+                        gl_FragColor = color2;
+                    }
+                }
+                """
+}
+
 object TwoOesTextureMixProgram {
     const val VERTEX_SHADER = """
                 uniform mat4 uSTMatrix1;
