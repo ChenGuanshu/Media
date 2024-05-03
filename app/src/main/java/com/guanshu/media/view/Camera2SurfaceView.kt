@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.AttributeSet
 import android.util.Log
 import android.view.SurfaceView
+import com.guanshu.media.utils.Logger
 
 private const val TAG = "Camera2SurfaceView"
 
@@ -22,7 +23,7 @@ class Camera2SurfaceView : SurfaceView {
     )
 
     fun updateSize(width: Int, height: Int) {
-        Log.i(TAG, "updateSize: $width*$height")
+        Logger.i(TAG, "updateSize: $width*$height")
         post {
             updatedWidth = width
             updatedHeight = height

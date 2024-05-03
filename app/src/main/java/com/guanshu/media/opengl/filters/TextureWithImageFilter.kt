@@ -11,12 +11,15 @@ import android.util.Size
 import com.guanshu.media.opengl.FLOAT_SIZE_BYTES
 import com.guanshu.media.opengl.ImageTextureProgram
 import com.guanshu.media.opengl.OesTextureProgram
+import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.checkGlError
 import com.guanshu.media.opengl.createProgram
 import com.guanshu.media.opengl.getAtrribLocation
 import com.guanshu.media.opengl.getUniformLocation
 import com.guanshu.media.opengl.newTexture
+import com.guanshu.media.opengl.updateTransformMatrix
 import com.guanshu.media.utils.DefaultSize
+import com.guanshu.media.utils.Logger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -64,7 +67,7 @@ class TextureWithImageFilter : BaseFilter(
 
     override fun init() {
         super.init()
-        Log.i(TAG, "call init")
+        Logger.i(TAG, "call init")
         initOesTexture()
         initBitmapTexture()
     }
@@ -93,7 +96,7 @@ class TextureWithImageFilter : BaseFilter(
         GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
         checkGlError("texImage2D")
 
-        Log.i(TAG, "initBitmapTexture $bitmapTexture, ${bitmap.width},${bitmap.height}")
+        Logger.i(TAG, "initBitmapTexture $bitmapTexture, ${bitmap.width},${bitmap.height}")
 
         bitmapProgram = createProgram(
             ImageTextureProgram.VERTEX_SHADER,
@@ -102,7 +105,7 @@ class TextureWithImageFilter : BaseFilter(
         if (bitmapProgram == 0) {
             throw RuntimeException("failed creating program")
         }
-        Log.i(TAG, "initBitmapTexture, bitmapProgram=$bitmapProgram")
+        Logger.i(TAG, "initBitmapTexture, bitmapProgram=$bitmapProgram")
 
         imageVertexBuffer = ByteBuffer.allocateDirect(imageVerticesData.size * FLOAT_SIZE_BYTES)
             .order(ByteOrder.nativeOrder())
@@ -111,29 +114,27 @@ class TextureWithImageFilter : BaseFilter(
     }
 
     override fun render(
-        textureId: Int,
-        textMatrix: FloatArray,
-        mediaResolution: Size,
-        screenResolution: Size,
+        textureDatas: List<TextureData>,
+        viewResolution: Size,
     ) {
+        val textureData = textureDatas.first()
+
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
         GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT or GLES20.GL_COLOR_BUFFER_BIT)
 
-        renderOesTexture(textureId, textMatrix, mediaResolution, screenResolution)
+        renderOesTexture(textureData, viewResolution)
         renderBitmapTexture()
     }
 
     private fun renderOesTexture(
-        textureId: Int,
-        textMatrix: FloatArray,
-        mediaResolution: Size,
-        screenResolution: Size,
+        textureData: TextureData,
+        viewResolution: Size,
     ) {
         GLES20.glUseProgram(program)
         checkGlError("glUseProgram")
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
-        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId)
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureData.textureId)
         GLES20.glUniform1i(sTextureHandle, 0)
         checkGlError("glUniform1i, $sTextureHandle")
 
@@ -155,9 +156,10 @@ class TextureWithImageFilter : BaseFilter(
         GLES20.glEnableVertexAttribArray(aTextureHandle)
 
         Matrix.setIdentityM(mvpMatrix, 0)
-        adjustTransformMatrix(mvpMatrix, mediaResolution, screenResolution)
+        updateTransformMatrix(mvpMatrix, textureData.resolution, viewResolution)
+
         GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
-        GLES20.glUniformMatrix4fv(stMatrixHandle, 1, false, textMatrix, 0)
+        GLES20.glUniformMatrix4fv(stMatrixHandle, 1, false, textureData.matrix, 0)
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         checkGlError("glDrawArrays")
     }
@@ -202,38 +204,5 @@ class TextureWithImageFilter : BaseFilter(
 
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         checkGlError("glDrawArrays")
-    }
-
-
-    /**
-     * TODO 这个可以优化成只做一次
-     */
-    private fun adjustTransformMatrix(
-        matrix: FloatArray,
-        mediaResolution: Size,
-        screenResolution: Size,
-    ) {
-        if (mediaResolution == DefaultSize || screenResolution == DefaultSize) {
-            return
-        }
-        val mediaAspectRatio = mediaResolution.width.toFloat() / mediaResolution.height
-        val viewAspectRatio = screenResolution.width.toFloat() / screenResolution.height
-
-        var scaleX = 1f
-        var scaleY = 1f
-        if (mediaAspectRatio > viewAspectRatio) {
-            // 视频比view更宽,x填满整个屏幕,y需要缩放，
-            val expectedHeight =
-                screenResolution.width.toFloat() / mediaResolution.width * mediaResolution.height
-            // 视频高度被默认拉伸填充了view，需要缩放
-            scaleY = expectedHeight / screenResolution.height
-        } else {
-            val expectedWidth =
-                screenResolution.height.toFloat() / mediaResolution.height * mediaResolution.width
-            scaleX = expectedWidth / screenResolution.width
-        }
-
-//        Matrix.scaleM(matrix, 0, scaleX, scaleY, 1f)
-        Matrix.scaleM(matrix, 0, scaleX * 0.8f, scaleY * 0.8f, 1f)
     }
 }
