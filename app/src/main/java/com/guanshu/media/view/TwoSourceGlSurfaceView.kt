@@ -14,6 +14,7 @@ import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.TextureRender
 import com.guanshu.media.opengl.newTexture
 import com.guanshu.media.utils.DefaultSize
+import com.guanshu.media.utils.Logger
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
@@ -40,23 +41,23 @@ class TwoSourceGlSurfaceView : GLSurfaceView {
         }
     var mediaResolution = DefaultSize
         set(value) {
-            Log.i(TAG, "set camera resolution=$value")
+            Logger.i(TAG, "set camera resolution=$value")
 //            textureData?.resolution = value
             field = value
         }
     var viewResolution = DefaultSize
         set(value) {
-            Log.i(TAG, "set view resolution=$value")
+            Logger.i(TAG, "set view resolution=$value")
             field = value
         }
 
     private val renderer = object : Renderer {
         override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
-            Log.i(TAG, "onSurfaceCreated")
+            Logger.i(TAG, "onSurfaceCreated")
             try {
                 textureRender.init()
             } catch (e: GlUtil.GlException) {
-                Log.e(TAG, "create texture failed", e)
+                Logger.e(TAG, "create texture failed", e)
             }
             // 设置 texture
             newTexture(textureIds)
@@ -77,7 +78,7 @@ class TwoSourceGlSurfaceView : GLSurfaceView {
         }
 
         override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
-            Log.i(TAG, "onSurfaceChanged $width, $height")
+            Logger.i(TAG, "onSurfaceChanged $width, $height")
             GLES20.glViewport(0, 0, width, height)
 
             // TODO

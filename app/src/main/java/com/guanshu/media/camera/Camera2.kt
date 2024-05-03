@@ -21,6 +21,7 @@ import android.view.OrientationEventListener
 import android.view.Surface
 import android.view.SurfaceHolder
 import com.google.common.base.Optional
+import com.guanshu.media.utils.Logger
 import com.guanshu.media.utils.postOrRun
 import io.reactivex.rxjava3.core.Completable
 import io.reactivex.rxjava3.disposables.Disposable
@@ -75,23 +76,23 @@ class Camera2(private val context: Context) {
         val sessionId: String,
     ) : CameraDevice.StateCallback() {
         override fun onOpened(camera: CameraDevice) {
-            Log.i(TAG, "onOpened:$camera, $sessionId")
+            Logger.i(TAG, "onOpened:$camera, $sessionId")
             cameraDeviceSubject.onNext(Optional.of(camera))
         }
 
         override fun onClosed(camera: CameraDevice) {
             super.onClosed(camera)
-            Log.i(TAG, "onClosed:$camera, $sessionId")
+            Logger.i(TAG, "onClosed:$camera, $sessionId")
             cameraDeviceSubject.onNext(Optional.absent())
         }
 
         override fun onDisconnected(camera: CameraDevice) {
-            Log.i(TAG, "onDisconnected:$camera, $sessionId")
+            Logger.i(TAG, "onDisconnected:$camera, $sessionId")
             cameraDeviceSubject.onNext(Optional.absent())
         }
 
         override fun onError(camera: CameraDevice, error: Int) {
-            Log.e(TAG, "onError $camera, $error, $sessionId")
+            Logger.e(TAG, "onError $camera, $error, $sessionId")
             cameraDeviceSubject.onNext(Optional.absent())
         }
     }
@@ -99,13 +100,13 @@ class Camera2(private val context: Context) {
     @SuppressLint("MissingPermission")
     fun openCamera(width: Int, height: Int, onCameraSizeChosen: (Int, Int) -> Unit) {
         cameraHandler.postOrRun {
-            Log.i(TAG, "open camera $width*$height")
+            Logger.i(TAG, "open camera $width*$height")
             val oldCameraDevice = cameraDeviceSubject.value?.orNull()
             if (oldCameraDevice != null) {
-                Log.w(TAG, "openCamera: already opened - close")
+                Logger.w(TAG, "openCamera: already opened - close")
                 closeCamera()
             } else if (cameraDeviceCallback != null) {
-                Log.w(
+                Logger.w(
                     TAG,
                     "there was a request to open the camera ${cameraDeviceCallback?.sessionId}"
                 )
@@ -118,7 +119,7 @@ class Camera2(private val context: Context) {
             val sizes = map.getOutputSizes(SurfaceTexture::class.java)
             orientation = getOrientation(cameraCharacteristics, deviceOrientation)
             previewSize = chooseSize(sizes, width, height, orientation)
-            Log.i(TAG, "pick=$previewSize, support sizes = ${sizes.joinToString(",")}")
+            Logger.i(TAG, "pick=$previewSize, support sizes = ${sizes.joinToString(",")}")
 
             orientationEventListener.enable()
             cameraDeviceCallback = CameraDeviceCallback(UUID.randomUUID().toString())
@@ -130,7 +131,7 @@ class Camera2(private val context: Context) {
 
     fun closeCamera() {
         cameraHandler.post {
-            Log.i(TAG, "close camera")
+            Logger.i(TAG, "close camera")
             orientationEventListener.disable()
 
             var disposable: Disposable? = null
@@ -141,11 +142,11 @@ class Camera2(private val context: Context) {
                 }.subscribe({
                     disposable?.dispose()
                     cameraDeviceSubject.onNext(Optional.absent())
-                    Log.i(TAG, "close camera done")
+                    Logger.i(TAG, "close camera done")
                 }, {
                     disposable?.dispose()
                     cameraDeviceSubject.onNext(Optional.absent())
-                    Log.e(TAG, "close camera failed", it)
+                    Logger.e(TAG, "close camera failed", it)
                 })
             cameraDeviceCallback = null
         }
@@ -153,13 +154,13 @@ class Camera2(private val context: Context) {
 
     fun startPreview(surface: Surface) {
         cameraHandler.postOrRun {
-            Log.i(TAG, "startPreview")
+            Logger.i(TAG, "startPreview")
             previewSurface = surface
             previewDisposable = cameraDeviceSubject
                 .subscribe {
                     val cameraDevice = it.orNull()
                     if (cameraDevice == null) {
-                        Log.w(TAG, "camera device is null")
+                        Logger.w(TAG, "camera device is null")
                         return@subscribe
                     }
 
@@ -170,13 +171,13 @@ class Camera2(private val context: Context) {
                         2
                     )
                     imageReader!!.setOnImageAvailableListener({
-                        Log.i(TAG, "on image available")
+                        Logger.i(TAG, "on image available")
                         try {
                             val image = it.acquireNextImage()
                             imageCallback?.run { this(image) }
                             imageCallback = null
                         } catch (e: Exception) {
-                            Log.e(TAG, "image failed", e)
+                            Logger.e(TAG, "image failed", e)
                         }
                     }, cameraHandler)
 
@@ -190,10 +191,10 @@ class Camera2(private val context: Context) {
                         object : CameraCaptureSession.StateCallback() {
                             override fun onConfigured(session: CameraCaptureSession) {
                                 if (previewDisposable == null || previewDisposable?.isDisposed == true) {
-                                    Log.i(TAG, "startPreview: canceled")
+                                    Logger.i(TAG, "startPreview: canceled")
                                     return
                                 }
-                                Log.i(TAG, "startPreview: onConfigured")
+                                Logger.i(TAG, "startPreview: onConfigured")
 
                                 previewRequestBuilder!!.set(
                                     CaptureRequest.CONTROL_AF_MODE,
@@ -211,7 +212,7 @@ class Camera2(private val context: Context) {
                             }
 
                             override fun onConfigureFailed(session: CameraCaptureSession) {
-                                Log.e(TAG, "startPreview: onConfigureFailed")
+                                Logger.e(TAG, "startPreview: onConfigureFailed")
                                 captureSessionSubject.onNext(Optional.absent())
                             }
                         }, cameraHandler
@@ -222,7 +223,7 @@ class Camera2(private val context: Context) {
 
     fun stopPreview() {
         cameraHandler.postOrRun {
-            Log.i(TAG, "stopPreview")
+            Logger.i(TAG, "stopPreview")
             previewDisposable?.dispose()
             previewDisposable = null
 
@@ -235,14 +236,14 @@ class Camera2(private val context: Context) {
 
                     disposable?.dispose()
                     captureSessionSubject.onNext(Optional.absent())
-                    Log.i(TAG, "stopPreview done")
+                    Logger.i(TAG, "stopPreview done")
                 }
         }
     }
 
     fun takePicture(callback: (Image) -> Unit) {
         cameraHandler.postOrRun {
-            Log.i(TAG, "take picture: start")
+            Logger.i(TAG, "take picture: start")
             imageCallback = callback
             val captureBuilder = cameraDeviceSubject
                 .take(1)
@@ -267,12 +268,12 @@ class Camera2(private val context: Context) {
                     captureBuilder
                 }
 
-            Log.i(TAG, "take picture: request")
+            Logger.i(TAG, "take picture: request")
             previewDisposable = captureBuilder.flatMapCompletable { builder ->
                 captureSessionSubject.take(1).flatMapCompletable { optionalSession ->
                     val session = optionalSession.get()
 
-                    Log.i(TAG, "take picture: stop preview")
+                    Logger.i(TAG, "take picture: stop preview")
                     if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.O) {
                         session.stopRepeating()
                     } else {
@@ -289,7 +290,7 @@ class Camera2(private val context: Context) {
                                 result: TotalCaptureResult
                             ) {
                                 super.onCaptureCompleted(session, request, result)
-                                Log.i(TAG, "capture result = $result")
+                                Logger.i(TAG, "capture result = $result")
 
                                 session.setRepeatingBurst(
                                     listOf(previewRequestBuilder!!.build()),
@@ -303,15 +304,15 @@ class Camera2(private val context: Context) {
                     Completable.complete()
                 }
             }.subscribe({
-                Log.i(TAG, "start capture: done")
+                Logger.i(TAG, "start capture: done")
             }, {
-                Log.e(TAG, "capture failed", it)
+                Logger.e(TAG, "capture failed", it)
             })
         }
     }
 
     private fun chooseSize(sizes: Array<Size>, width: Int, height: Int, orientation: Int): Size {
-        Log.i(TAG, "choose size for $width, $height, $orientation")
+        Logger.i(TAG, "choose size for $width, $height, $orientation")
         val options = arrayListOf<Size>()
         sizes.forEachIndexed { index, size ->
             val thisSize =
@@ -353,7 +354,7 @@ class Camera2(private val context: Context) {
         // Calculate desired JPEG orientation relative to camera orientation to make
         // the image upright relative to the device orientation
         val retOrientation = (sensorOrientation + deviceOrientation + 360) % 360
-        Log.i(TAG, "retOrientation: $retOrientation")
+        Logger.i(TAG, "retOrientation: $retOrientation")
         return retOrientation
     }
 }

@@ -19,6 +19,7 @@ import com.guanshu.media.opengl.getUniformLocation
 import com.guanshu.media.opengl.newTexture
 import com.guanshu.media.opengl.updateTransformMatrix
 import com.guanshu.media.utils.DefaultSize
+import com.guanshu.media.utils.Logger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -66,7 +67,7 @@ class TextureWithImageFilter : BaseFilter(
 
     override fun init() {
         super.init()
-        Log.i(TAG, "call init")
+        Logger.i(TAG, "call init")
         initOesTexture()
         initBitmapTexture()
     }
@@ -95,7 +96,7 @@ class TextureWithImageFilter : BaseFilter(
         GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
         checkGlError("texImage2D")
 
-        Log.i(TAG, "initBitmapTexture $bitmapTexture, ${bitmap.width},${bitmap.height}")
+        Logger.i(TAG, "initBitmapTexture $bitmapTexture, ${bitmap.width},${bitmap.height}")
 
         bitmapProgram = createProgram(
             ImageTextureProgram.VERTEX_SHADER,
@@ -104,7 +105,7 @@ class TextureWithImageFilter : BaseFilter(
         if (bitmapProgram == 0) {
             throw RuntimeException("failed creating program")
         }
-        Log.i(TAG, "initBitmapTexture, bitmapProgram=$bitmapProgram")
+        Logger.i(TAG, "initBitmapTexture, bitmapProgram=$bitmapProgram")
 
         imageVertexBuffer = ByteBuffer.allocateDirect(imageVerticesData.size * FLOAT_SIZE_BYTES)
             .order(ByteOrder.nativeOrder())

@@ -3,6 +3,7 @@ package com.guanshu.media.opengl
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.util.Log
+import com.guanshu.media.utils.Logger
 
 private const val TAG = "OpenGL"
 
@@ -17,8 +18,8 @@ private fun loadShader(shaderType: Int, source: String): Int {
     val compiled = IntArray(1)
     GLES20.glGetShaderiv(shader, GLES20.GL_COMPILE_STATUS, compiled, 0)
     if (compiled[0] == 0) {
-        Log.e(TAG, "Could not compile shader $shaderType:")
-        Log.e(TAG, " " + GLES20.glGetShaderInfoLog(shader))
+        Logger.e(TAG, "Could not compile shader $shaderType:")
+        Logger.e(TAG, " " + GLES20.glGetShaderInfoLog(shader))
         GLES20.glDeleteShader(shader)
         shader = 0
     }
@@ -37,7 +38,7 @@ fun createProgram(vertexSource: String, fragmentSource: String): Int {
     var program = GLES20.glCreateProgram()
     checkGlError("glCreateProgram")
     if (program == 0) {
-        Log.e(TAG, "Could not create program")
+        Logger.e(TAG, "Could not create program")
     }
     GLES20.glAttachShader(program, vertexShader)
     checkGlError("glAttachShader")
@@ -47,8 +48,8 @@ fun createProgram(vertexSource: String, fragmentSource: String): Int {
     val linkStatus = IntArray(1)
     GLES20.glGetProgramiv(program, GLES20.GL_LINK_STATUS, linkStatus, 0)
     if (linkStatus[0] != GLES20.GL_TRUE) {
-        Log.e(TAG, "Could not link program: ")
-        Log.e(TAG, GLES20.glGetProgramInfoLog(program))
+        Logger.e(TAG, "Could not link program: ")
+        Logger.e(TAG, GLES20.glGetProgramInfoLog(program))
         GLES20.glDeleteProgram(program)
         program = 0
     }
@@ -78,7 +79,7 @@ fun Int.getUniformLocation(name: String): Int {
 fun checkGlError(op: String) {
     var error: Int
     while (GLES20.glGetError().also { error = it } != GLES20.GL_NO_ERROR) {
-        Log.e(TAG, "$op: glError $error")
+        Logger.e(TAG, "$op: glError $error")
         throw RuntimeException("$op: glError $error")
     }
 }

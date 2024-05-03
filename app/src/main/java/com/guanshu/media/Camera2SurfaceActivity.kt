@@ -11,6 +11,7 @@ import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import com.guanshu.media.application.GlobalDependency
+import com.guanshu.media.utils.Logger
 import com.guanshu.media.view.Camera2SurfaceView
 
 
@@ -31,7 +32,7 @@ class Camera2SurfaceActivity : ComponentActivity(), SurfaceHolder.Callback {
         val imageView = findViewById<ImageView>(R.id.surface_camera_image)
         findViewById<View>(R.id.surface_camera_button).setOnClickListener {
             Toast.makeText(this, "Capture", Toast.LENGTH_SHORT).show()
-            Log.i(TAG, "capture")
+            Logger.i(TAG, "capture")
 
             camera2.takePicture { image ->
                 val buffer = image.planes[0].buffer;
@@ -48,7 +49,7 @@ class Camera2SurfaceActivity : ComponentActivity(), SurfaceHolder.Callback {
                     Matrix().apply { postScale(-1f, 1f) },
                     false
                 )
-                Log.i(TAG, "capture done: update imageview")
+                Logger.i(TAG, "capture done: update imageview")
                 imageView.post {
                     imageView.setImageBitmap(flipBitmap)
                 }
@@ -58,17 +59,17 @@ class Camera2SurfaceActivity : ComponentActivity(), SurfaceHolder.Callback {
 
     override fun onResume() {
         super.onResume()
-        Log.i(TAG, "onResume")
+        Logger.i(TAG, "onResume")
     }
 
     override fun onPause() {
         super.onPause()
-        Log.i(TAG, "onPause")
+        Logger.i(TAG, "onPause")
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
         this.surfaceHolder = holder
-        Log.i(TAG, "surfaceCreated")
+        Logger.i(TAG, "surfaceCreated")
 
         camera2.openCamera(surfaceView.width, surfaceView.height) { newWidth, newHeight ->
             surfaceView.updateSize(newWidth, newHeight)
@@ -78,12 +79,12 @@ class Camera2SurfaceActivity : ComponentActivity(), SurfaceHolder.Callback {
 
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
         this.surfaceHolder = holder
-        Log.i(TAG, "surfaceChanged,format=$format,resolution=$width*$height")
+        Logger.i(TAG, "surfaceChanged,format=$format,resolution=$width*$height")
     }
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         this.surfaceHolder = holder
-        Log.i(TAG, "surfaceDestroyed")
+        Logger.i(TAG, "surfaceDestroyed")
 
         camera2.stopPreview()
         camera2.closeCamera()

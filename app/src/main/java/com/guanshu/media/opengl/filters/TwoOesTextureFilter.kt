@@ -14,6 +14,7 @@ import com.guanshu.media.opengl.getAtrribLocation
 import com.guanshu.media.opengl.getUniformLocation
 import com.guanshu.media.opengl.updateTransformMatrix
 import com.guanshu.media.utils.DefaultSize
+import com.guanshu.media.utils.Logger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -46,7 +47,7 @@ class TwoOesTextureFilter : BaseFilter(
 
     override fun init() {
         super.init()
-        Log.i(TAG, "call init")
+        Logger.i(TAG, "call init")
         aPositionHandle = program.getAtrribLocation("aPosition")
         mvpMatrixHandle = program.getUniformLocation("uMVPMatrix")
         aTextureHandle = program.getAtrribLocation("aTextureCoord")

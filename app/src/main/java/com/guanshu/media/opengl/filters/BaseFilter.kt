@@ -4,6 +4,7 @@ import android.util.Log
 import android.util.Size
 import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.createProgram
+import com.guanshu.media.utils.Logger
 
 private const val TAG = "BaseFilter"
 
@@ -20,7 +21,7 @@ abstract class BaseFilter(
         if (init) return
         init = true
 
-        Log.i(TAG, "init")
+        Logger.i(TAG, "init")
         program = createProgram(vertexShader, fragmentShader)
         if (program == 0) {
             throw RuntimeException("failed creating program")

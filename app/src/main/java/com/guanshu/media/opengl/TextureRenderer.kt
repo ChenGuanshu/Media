@@ -1,21 +1,22 @@
 package com.guanshu.media.opengl
 
-import android.util.Log
 import android.util.Size
+import com.guanshu.media.opengl.filters.BaseFilter
 import com.guanshu.media.opengl.filters.FlattenFilter
 import com.guanshu.media.opengl.filters.FlattenWithImageFilter
 import com.guanshu.media.opengl.filters.SingleTextureFilter
 import com.guanshu.media.opengl.filters.TextureWithImageFilter
 import com.guanshu.media.opengl.filters.TwoOesTextureFilter
+import com.guanshu.media.utils.Logger
 
 private const val TAG = "TextureRender"
 
 val filterIdMap = hashMapOf(
-    1 to SingleTextureFilter(),
-    2 to TextureWithImageFilter(),
-    3 to FlattenFilter(),
-    4 to FlattenWithImageFilter(),
-    5 to TwoOesTextureFilter(),
+    1 to SingleTextureFilter::class.java,
+    2 to TextureWithImageFilter::class.java,
+    3 to FlattenFilter::class.java,
+    4 to FlattenWithImageFilter::class.java,
+    5 to TwoOesTextureFilter::class.java,
 )
 
 class TextureData(
@@ -24,10 +25,10 @@ class TextureData(
     var resolution: Size,
 )
 
-class TextureRender {
-
-    var filterId = 1
-    private val filter get() = checkNotNull(filterIdMap[filterId] ?: filterIdMap[1])
+class TextureRender(
+    private val filterId: Int = 1
+) {
+    private lateinit var filter: BaseFilter
 
     private var init = false
 
@@ -38,8 +39,9 @@ class TextureRender {
     fun init() {
         if (init) return
         init = true
-        Log.i(TAG, "init $this")
+        Logger.i(TAG, "init $this")
 
+        filter = (filterIdMap[filterId] ?: filterIdMap[1])!!.newInstance()
         filter.init()
     }
 

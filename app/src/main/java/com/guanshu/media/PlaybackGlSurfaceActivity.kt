@@ -11,6 +11,7 @@ import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.PlaybackException
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.analytics.AnalyticsListener
+import com.guanshu.media.utils.Logger
 import com.guanshu.media.view.SingleSourceGlSurfaceView
 
 private const val TAG = "PlaybackGlSurfaceActivity"
@@ -37,7 +38,7 @@ class PlaybackGlSurfaceActivity : ComponentActivity(), Player.Listener {
                 format: Format
             ) {
                 super.onVideoInputFormatChanged(eventTime, format)
-                Log.i(TAG, "input format=$format")
+                Logger.i(TAG, "input format=$format")
                 val size = when (format.rotationDegrees) {
                     90, 270 -> Size(format.height, format.width)
                     else -> Size(format.width, format.height)
@@ -50,12 +51,12 @@ class PlaybackGlSurfaceActivity : ComponentActivity(), Player.Listener {
     }
 
     override fun onPlayerError(error: PlaybackException) {
-        Log.e(TAG, "onPlayerError", error)
+        Logger.e(TAG, "onPlayerError", error)
     }
 
     override fun onResume() {
         super.onResume()
-        Log.i(TAG, "onResume")
+        Logger.i(TAG, "onResume")
         surfaceView.onSurfaceCreate = { surface ->
             surfaceView.post {
                 this.player?.setVideoSurface(surface)
@@ -66,7 +67,7 @@ class PlaybackGlSurfaceActivity : ComponentActivity(), Player.Listener {
 
     override fun onPause() {
         super.onPause()
-        Log.i(TAG, "onPause")
+        Logger.i(TAG, "onPause")
         this.player?.playWhenReady = false
         this.player?.setVideoSurface(null)
     }

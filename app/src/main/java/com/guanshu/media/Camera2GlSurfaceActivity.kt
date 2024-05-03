@@ -5,6 +5,7 @@ import android.util.Log
 import android.util.Size
 import androidx.activity.ComponentActivity
 import com.guanshu.media.application.GlobalDependency
+import com.guanshu.media.utils.Logger
 import com.guanshu.media.view.SingleSourceGlSurfaceView
 
 private const val TAG = "Camera2GlSurfaceActivity"
@@ -22,7 +23,7 @@ class Camera2GlSurfaceActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        Log.i(TAG, "onResume")
+        Logger.i(TAG, "onResume")
         surfaceView.onSurfaceCreate = { surface ->
             camera2.openCamera(surfaceView.width, surfaceView.height) { newWidth, newHeight ->
                 surfaceView.mediaResolution = Size(newWidth, newHeight)
@@ -33,7 +34,7 @@ class Camera2GlSurfaceActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
-        Log.i(TAG, "onPause")
+        Logger.i(TAG, "onPause")
         camera2.stopPreview()
         camera2.closeCamera()
     }

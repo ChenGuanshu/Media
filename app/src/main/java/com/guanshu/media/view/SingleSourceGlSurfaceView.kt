@@ -14,6 +14,7 @@ import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.TextureRender
 import com.guanshu.media.opengl.newTexture
 import com.guanshu.media.utils.DefaultSize
+import com.guanshu.media.utils.Logger
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.microedition.khronos.egl.EGLConfig
 import javax.microedition.khronos.opengles.GL10
@@ -31,9 +32,7 @@ class SingleSourceGlSurfaceView : GLSurfaceView {
     private var textureData: TextureData? = null
 
     private val frameAvailable = AtomicBoolean(false)
-    private val textureRender = TextureRender().apply {
-        filterId = 4
-    }
+    private val textureRender = TextureRender(4)
 
     var onSurfaceCreate: ((Surface) -> Unit)? = null
         set(value) {
@@ -44,20 +43,20 @@ class SingleSourceGlSurfaceView : GLSurfaceView {
         }
     var mediaResolution = DefaultSize
         set(value) {
-            Log.i(TAG, "set camera resolution=$value")
+            Logger.i(TAG, "set camera resolution=$value")
 //            surfaceTexture?.setDefaultBufferSize(value.width, value.height)
             textureData?.resolution = value
             field = value
         }
     var viewResolution = DefaultSize
         set(value) {
-            Log.i(TAG, "set view resolution=$value")
+            Logger.i(TAG, "set view resolution=$value")
             field = value
         }
 
     private val renderer = object : Renderer {
         override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
-            Log.i(TAG, "onSurfaceCreated")
+            Logger.i(TAG, "onSurfaceCreated")
 
             val textures = IntArray(1)
             newTexture(textures)
@@ -75,7 +74,7 @@ class SingleSourceGlSurfaceView : GLSurfaceView {
         }
 
         override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
-            Log.i(TAG, "onSurfaceChanged $width, $height")
+            Logger.i(TAG, "onSurfaceChanged $width, $height")
             // 可以通过调整viewport的大小，来调整输出的视频大小
 //            GLES20.glViewport(100, 100, width-200, height-200)
             GLES20.glViewport(0, 0, width, height)
