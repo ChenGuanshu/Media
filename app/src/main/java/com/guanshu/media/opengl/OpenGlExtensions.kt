@@ -29,10 +29,12 @@ private fun loadShader(shaderType: Int, source: String): Int {
 fun createProgram(vertexSource: String, fragmentSource: String): Int {
     val vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexSource)
     if (vertexShader == 0) {
+        Logger.w(TAG,"failed to load vertex shader $vertexSource")
         return 0
     }
     val pixelShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentSource)
     if (pixelShader == 0) {
+        Logger.w(TAG,"failed to load fragment shader $fragmentSource")
         return 0
     }
     var program = GLES20.glCreateProgram()

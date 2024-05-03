@@ -32,7 +32,7 @@ class TwoSourceGlSurfaceView : GLSurfaceView {
     private val textureDatas = arrayListOf<TextureData>()
     private val frameAvailables = hashMapOf<SurfaceTexture, AtomicBoolean>()
 
-    private val textureRender = TextureRender(5)
+    private val textureRender = TextureRender(6)
 
     fun setMediaResolution(index:Int, size:Size){
         textureDatas[index].resolution = size
