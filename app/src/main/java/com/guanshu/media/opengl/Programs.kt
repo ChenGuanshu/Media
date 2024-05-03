@@ -44,3 +44,58 @@ object ImageTextureProgram {
                 }
                 """
 }
+
+object GaussianTextureProgram {
+
+    private const val VERTEX_SHADER = """
+                uniform mat4 uMVPMatrix;
+                uniform mat4 uSTMatrix;
+                attribute vec4 aPosition;
+                attribute vec4 aTextureCoord;
+                varying vec2 vTextureCoord;
+                varying vec2 blurCoordinates[9];
+                void main() {
+                  gl_Position = uMVPMatrix * aPosition;
+                  vTextureCoord = (uSTMatrix * aTextureCoord).xy;
+                  
+                  //横向和纵向的步长
+                  vec2 widthStep = vec2(10.0/2448.0, 0.0);
+                  vec2 heightStep = vec2(0.0, 10.0/3264.0);
+                  //计算出当前片段相邻像素的纹理坐标
+                  blurCoordinates[0] = vTextureCoord.xy - heightStep - widthStep; // 左上
+                  blurCoordinates[1] = vTextureCoord.xy - heightStep; // 上
+                  blurCoordinates[2] = vTextureCoord.xy - heightStep + widthStep; // 右上
+                  blurCoordinates[3] = vTextureCoord.xy - widthStep; // 左中
+                  blurCoordinates[4] = vTextureCoord.xy; // 中
+                  blurCoordinates[5] = vTextureCoord.xy + widthStep; // 右中
+                  blurCoordinates[6] = vTextureCoord.xy + heightStep - widthStep; // 左下
+                  blurCoordinates[7] = vTextureCoord.xy + heightStep; // 下
+                  blurCoordinates[8] = vTextureCoord.xy + heightStep + widthStep; // 右下
+                }
+                """
+
+    private const val FRAGMENT_SHADER = """
+                #extension GL_OES_EGL_image_external : require
+                precision mediump float;
+                varying vec2 vTextureCoord;
+                varying vec2 blurCoordinates[9];
+                uniform samplerExternalOES sTexture;
+                mat3 kernelMatrix = mat3(
+                    0.0947416f, 0.118318f, 0.0947416f,
+                    0.118318f,  0.147761f, 0.118318f,
+                    0.0947416f, 0.118318f, 0.0947416f
+                );
+                void main() {
+                    vec4 sum = texture2D(sTexture, blurCoordinates[0]) * kernelMatrix[0][0];
+                    sum += texture2D(sTexture, blurCoordinates[1]) * kernelMatrix[0][1];
+                    sum += texture2D(sTexture, blurCoordinates[2]) * kernelMatrix[0][2];
+                    sum += texture2D(sTexture, blurCoordinates[3]) * kernelMatrix[1][0];
+                    sum += texture2D(sTexture, blurCoordinates[4]) * kernelMatrix[1][1];
+                    sum += texture2D(sTexture, blurCoordinates[5]) * kernelMatrix[1][2];
+                    sum += texture2D(sTexture, blurCoordinates[6]) * kernelMatrix[2][0];
+                    sum += texture2D(sTexture, blurCoordinates[7]) * kernelMatrix[2][1];
+                    sum += texture2D(sTexture, blurCoordinates[8]) * kernelMatrix[2][2];
+                    gl_FragColor = sum;
+                } 
+        """
+}

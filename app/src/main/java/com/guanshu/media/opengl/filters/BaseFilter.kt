@@ -28,7 +28,7 @@ abstract class BaseFilter(
     }
 
     abstract fun render(
-        textureData: TextureData,
+        textureDatas: List<TextureData>,
         viewResolution: Size,
     )
 }

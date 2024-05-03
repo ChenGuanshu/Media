@@ -12,6 +12,7 @@ import android.view.Surface
 import com.google.android.exoplayer2.util.GlUtil
 import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.TextureRender
+import com.guanshu.media.opengl.newTexture
 import com.guanshu.media.utils.DefaultSize
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.microedition.khronos.egl.EGLConfig
@@ -24,12 +25,15 @@ class SingleSourceGlSurfaceView : GLSurfaceView {
     constructor(context: Context) : super(context, null)
     constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
 
+    private var textureId = -12345
     private var surfaceTexture: SurfaceTexture? = null
     private var surface: Surface? = null
     private var textureData: TextureData? = null
 
     private val frameAvailable = AtomicBoolean(false)
-    private val textureRender = TextureRender()
+    private val textureRender = TextureRender().apply {
+        filterId = 4
+    }
 
     var onSurfaceCreate: ((Surface) -> Unit)? = null
         set(value) {
@@ -54,20 +58,20 @@ class SingleSourceGlSurfaceView : GLSurfaceView {
     private val renderer = object : Renderer {
         override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
             Log.i(TAG, "onSurfaceCreated")
-            try {
-                textureRender.init()
-            } catch (e: GlUtil.GlException) {
-                Log.e(TAG, "create texture failed", e)
-            }
 
-            surfaceTexture = SurfaceTexture(textureRender.textureId)
+            val textures = IntArray(1)
+            newTexture(textures)
+            textureId = textures[0]
+            surfaceTexture = SurfaceTexture(textureId)
             surfaceTexture?.setOnFrameAvailableListener {
                 frameAvailable.set(true)
                 requestRender()
             }
             surface = Surface(surfaceTexture)
-            textureData = TextureData(textureRender.textureId, FloatArray(16), mediaResolution)
+            textureData = TextureData(textureId, FloatArray(16), mediaResolution)
             onSurfaceCreate?.invoke(surface!!)
+
+            textureRender.init()
         }
 
         override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
@@ -86,10 +90,17 @@ class SingleSourceGlSurfaceView : GLSurfaceView {
                 surfaceTexture?.updateTexImage()
                 Matrix.setIdentityM(textureData!!.matrix, 0)
                 surfaceTexture?.getTransformMatrix(textureData!!.matrix)
+                /**
+                 * 0.0, -1.0, 0.0, 0.0,
+                 * 1.0,  0.0, 0.0, 0.0,
+                 * 0.0,  0.0, 1.0, 0.0,
+                 * 0.0,  1.0, 0.0, 1.0
+                 * 这是一个st matrix的例子，表示了顺时针调整了90度，用来将纹理的内容正向
+                 */
             }
 
             textureRender.drawFrame(
-                textureData!!,
+                listOf(textureData!!),
                 viewResolution,
             )
         }

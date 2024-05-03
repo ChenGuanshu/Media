@@ -62,9 +62,7 @@ private val vertexCoord = floatArrayOf(
     0.0f, 0.0f, 0f, 1f, 0f,
     -1.0f, 1.0f, 0f, 0f, 1f,
     0.0f, 1.0f, 0f, 1f, 1f,
-
-
-    )
+)
 
 private val vertexIndex = intArrayOf(
     0, 1, 2, 1, 2, 3,
@@ -178,9 +176,11 @@ class FlattenWithImageFilter : BaseFilter(
     }
 
     override fun render(
-        textureData: TextureData,
+        textureDatas: List<TextureData>,
         viewResolution: Size,
     ) {
+        val textureData = textureDatas.first()
+
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
         glClear(GL_DEPTH_BUFFER_BIT or GL_COLOR_BUFFER_BIT)
 

@@ -31,7 +31,7 @@ private const val TAG = "SingleTextureFilter"
 /**
  * 渲染texture
  */
-class SingleTextureFilter : BaseFilter(
+class TwoOesTextureFilter : BaseFilter(
     OesTextureProgram.VERTEX_SHADER,
     OesTextureProgram.FRAGMENT_SHADER,
 ) {
@@ -105,13 +105,6 @@ class SingleTextureFilter : BaseFilter(
 
         Matrix.setIdentityM(mvpMatrix, 0)
         updateTransformMatrix(mvpMatrix, textureData.resolution, viewResolution)
-
-        // just a sample of scaling
-        Matrix.scaleM(mvpMatrix, 0, 0.8f, 0.8f, 1f)
-
-        // 缩放纹理，会导致纹理坐标 >1 的使用 clamp_to_edge mode，出现像素重复
-        // 建议缩放顶点坐标
-//        Matrix.scaleM(stMatrix, 0, 2f, 2f, 1f)
 
         GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
         GLES20.glUniformMatrix4fv(stMatrixHandle, 1, false, textureData.matrix, 0)

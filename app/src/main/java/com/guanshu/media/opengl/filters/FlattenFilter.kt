@@ -131,9 +131,11 @@ class FlattenFilter : BaseFilter(
     }
 
     override fun render(
-        textureData: TextureData,
+        textureDatas: List<TextureData>,
         viewResolution: Size,
     ) {
+        val textureData = textureDatas.first()
+
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
         glClear(GL_DEPTH_BUFFER_BIT or GL_COLOR_BUFFER_BIT)
         glUseProgram(program)
