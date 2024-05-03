@@ -7,6 +7,7 @@ import com.guanshu.media.opengl.filters.FlattenWithImageFilter
 import com.guanshu.media.opengl.filters.SingleTextureFilter
 import com.guanshu.media.opengl.filters.TextureWithImageFilter
 import com.guanshu.media.opengl.filters.TwoOesTextureFilter
+import com.guanshu.media.opengl.filters.TwoOesTextureFilter2
 import com.guanshu.media.opengl.filters.TwoOesTextureMixFilter
 import com.guanshu.media.utils.Logger
 
@@ -18,7 +19,8 @@ val filterIdMap = hashMapOf(
     3 to FlattenFilter::class.java,
     4 to FlattenWithImageFilter::class.java,
     5 to TwoOesTextureFilter::class.java,
-    6 to TwoOesTextureMixFilter::class.java,
+    6 to TwoOesTextureFilter2::class.java,
+    7 to TwoOesTextureMixFilter::class.java,
 )
 
 class TextureData(
