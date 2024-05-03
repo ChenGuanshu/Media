@@ -25,5 +25,10 @@ class MainActivity : ComponentActivity() {
             val intent = Intent(this, PlaybackGlSurfaceActivity::class.java)
             startActivity(intent)
         }
+
+        findViewById<View>(R.id.camera_playback_to_glsurface).setOnClickListener {
+            val intent = Intent(this, CameraAndPlaybackGlSurfaceActivity::class.java)
+            startActivity(intent)
+        }
     }
 }

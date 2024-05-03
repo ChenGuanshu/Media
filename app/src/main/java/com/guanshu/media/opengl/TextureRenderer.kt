@@ -28,8 +28,8 @@ class TextureData(
 class TextureRender(
     private val filterId: Int = 1
 ) {
-    private lateinit var filter: BaseFilter
 
+    private lateinit var filter: BaseFilter
     private var init = false
 
 

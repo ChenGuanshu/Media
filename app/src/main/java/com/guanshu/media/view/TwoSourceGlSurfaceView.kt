@@ -29,22 +29,21 @@ class TwoSourceGlSurfaceView : GLSurfaceView {
     private val textureIds = IntArray(2)
     private val surfaceTextures = arrayListOf<SurfaceTexture>()
     private val surfaces = arrayListOf<Surface>()
-    private val textureDatas = hashMapOf<SurfaceTexture, TextureData>()
+    private val textureDatas = arrayListOf<TextureData>()
     private val frameAvailables = hashMapOf<SurfaceTexture, AtomicBoolean>()
 
-    private val textureRender = TextureRender()
+    private val textureRender = TextureRender(5)
+
+    fun setMediaResolution(index:Int, size:Size){
+        textureDatas[index].resolution = size
+    }
 
     var onSurfaceCreate: ((List<Surface>) -> Unit)? = null
         set(value) {
             value?.invoke(surfaces)
             field = value
         }
-    var mediaResolution = DefaultSize
-        set(value) {
-            Logger.i(TAG, "set camera resolution=$value")
-//            textureData?.resolution = value
-            field = value
-        }
+
     var viewResolution = DefaultSize
         set(value) {
             Logger.i(TAG, "set view resolution=$value")
@@ -69,9 +68,8 @@ class TwoSourceGlSurfaceView : GLSurfaceView {
                     requestRender()
                 }
                 surfaceTextures.add(surfaceTexture)
-
                 surfaces.add(Surface(surfaceTexture))
-                textureDatas[surfaceTexture] = TextureData(it, FloatArray(16), mediaResolution)
+                textureDatas.add(TextureData(it, FloatArray(16), DefaultSize))
             }
 
             onSurfaceCreate?.invoke(surfaces)
@@ -80,10 +78,8 @@ class TwoSourceGlSurfaceView : GLSurfaceView {
         override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
             Logger.i(TAG, "onSurfaceChanged $width, $height")
             GLES20.glViewport(0, 0, width, height)
-
             // TODO
             surfaceTextures.forEach { it.setDefaultBufferSize(width, height) }
-
             viewResolution = Size(width, height)
         }
 
@@ -91,8 +87,7 @@ class TwoSourceGlSurfaceView : GLSurfaceView {
             frameAvailables.entries.forEach {
                 val st = it.key
                 val aBoolean = it.value
-                val textureData = textureDatas[st]!!
-
+                val textureData = textureDatas[surfaceTextures.indexOf(st)]
                 if (aBoolean.compareAndSet(true, false)) {
                     st.updateTexImage()
                     Matrix.setIdentityM(textureData.matrix, 0)
@@ -101,7 +96,7 @@ class TwoSourceGlSurfaceView : GLSurfaceView {
             }
 
             textureRender.drawFrame(
-                textureDatas.values.toList(),
+                textureDatas,
                 viewResolution,
             )
         }
