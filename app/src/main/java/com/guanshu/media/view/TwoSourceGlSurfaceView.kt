@@ -4,6 +4,7 @@
 //import android.graphics.SurfaceTexture
 //import android.opengl.GLES20
 //import android.opengl.GLSurfaceView
+//import android.opengl.Matrix
 //import android.util.AttributeSet
 //import android.util.Log
 //import android.util.Size
@@ -15,16 +16,16 @@
 //import javax.microedition.khronos.egl.EGLConfig
 //import javax.microedition.khronos.opengles.GL10
 //
-//private const val TAG = "MultipleSourceGlSurfaceView"
+//private const val TAG = "SingleSourceGlSurfaceView"
 //
 //class TwoSourceGlSurfaceView : GLSurfaceView {
 //
 //    constructor(context: Context) : super(context, null)
 //    constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
 //
-//    private val surfaceTextureList = arrayListOf<SurfaceTexture>()
-//    private val surfaceList = arrayListOf<Surface>()
-//
+//    private val stMatrix = FloatArray(16)
+//    private var surfaceTexture: SurfaceTexture? = null
+//    private var surface: Surface? = null
 //    private val frameAvailable = AtomicBoolean(false)
 //    private val textureRender = TextureRender()
 //    var onSurfaceCreate: ((Surface) -> Unit)? = null
@@ -37,6 +38,7 @@
 //    var mediaResolution = DefaultSize
 //        set(value) {
 //            Log.i(TAG, "set camera resolution=$value")
+////            surfaceTexture?.setDefaultBufferSize(value.width, value.height)
 //            field = value
 //        }
 //    var viewResolution = DefaultSize
@@ -54,8 +56,6 @@
 //                Log.e(TAG, "create texture failed", e)
 //            }
 //
-//            // TODO 动态申请 texture
-//
 //            surfaceTexture = SurfaceTexture(textureRender.textureId)
 //            surfaceTexture?.setOnFrameAvailableListener {
 //                frameAvailable.set(true)
@@ -67,7 +67,10 @@
 //
 //        override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
 //            Log.i(TAG, "onSurfaceChanged $width, $height")
+//            // 可以通过调整viewport的大小，来调整输出的视频大小
+////            GLES20.glViewport(100, 100, width-200, height-200)
 //            GLES20.glViewport(0, 0, width, height)
+//
 //            // 控制camera的输出buffer，不设置的话分辨率会比较低
 //            surfaceTexture?.setDefaultBufferSize(width, height)
 //            viewResolution = Size(width, height)
@@ -76,12 +79,15 @@
 //        override fun onDrawFrame(gl: GL10?) {
 //            if (frameAvailable.compareAndSet(true, false)) {
 //                surfaceTexture?.updateTexImage()
-//                textureRender.drawFrame(
-//                    surfaceTexture!!,
-//                    mediaResolution,
-//                    viewResolution,
-//                )
+//                Matrix.setIdentityM(stMatrix, 0)
+//                surfaceTexture?.getTransformMatrix(stMatrix)
 //            }
+//
+//            textureRender.drawFrame(
+//                stMatrix,
+//                mediaResolution,
+//                viewResolution,
+//            )
 //        }
 //    }
 //

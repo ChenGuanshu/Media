@@ -1,9 +1,5 @@
 package com.guanshu.media.opengl
 
-import android.graphics.SurfaceTexture
-import android.opengl.GLES11Ext
-import android.opengl.GLES20
-import android.opengl.Matrix
 import android.util.Log
 import android.util.Size
 import com.guanshu.media.opengl.filters.FlattenFilter
@@ -12,15 +8,25 @@ import com.guanshu.media.opengl.filters.SingleTextureFilter
 import com.guanshu.media.opengl.filters.TextureWithImageFilter
 
 private const val TAG = "TextureRender"
+private const val FILTER_ID = 3
+
+class TextureData(
+    val textureId: Int,
+    val matrix: FloatArray,
+    var resolution: Size,
+)
 
 class TextureRender {
 
-
     // TODO support changing
-//    private var filter = SingleTextureFilter()
-    private val filter = FlattenWithImageFilter()
+    private val filter = when (FILTER_ID) {
+        1 -> SingleTextureFilter()
+        2 -> TextureWithImageFilter()
+        3 -> FlattenFilter()
+        4 -> FlattenWithImageFilter()
+        else -> SingleTextureFilter()
+    }
 
-    //    private val filter = TextureWithImageFilter()
     private var init = false
 
     var textureId = -12345
@@ -43,10 +49,8 @@ class TextureRender {
     }
 
     fun drawFrame(
-        surfaceTexture: SurfaceTexture,
-        textureMatrix: FloatArray,
-        mediaResolution: Size,
-        screenResolution: Size,
+        textureData: TextureData,
+        viewResolution: Size,
     ) {
         checkGlError("onDrawFrame start")
 
@@ -57,7 +61,7 @@ class TextureRender {
          * 0.0,  1.0, 0.0, 1.0
          * 这是一个st matrix的例子，表示了顺时针调整了90度，用来将纹理的内容正向
          */
-        filter.render(textureId, textureMatrix, mediaResolution, screenResolution)
+        filter.render(textureData, viewResolution)
     }
 
     // Deprecated: move to other filter

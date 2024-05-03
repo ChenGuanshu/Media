@@ -2,6 +2,7 @@ package com.guanshu.media.opengl.filters
 
 import android.util.Log
 import android.util.Size
+import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.createProgram
 
 private const val TAG = "BaseFilter"
@@ -27,9 +28,7 @@ abstract class BaseFilter(
     }
 
     abstract fun render(
-        textureId: Int,
-        textMatrix: FloatArray,
-        mediaResolution: Size,
-        screenResolution: Size,
+        textureData: TextureData,
+        viewResolution: Size,
     )
 }

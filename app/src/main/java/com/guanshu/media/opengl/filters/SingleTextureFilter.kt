@@ -5,11 +5,14 @@ import android.opengl.GLES20
 import android.opengl.Matrix
 import android.util.Log
 import android.util.Size
+import androidx.compose.animation.core.updateTransition
 import com.guanshu.media.opengl.FLOAT_SIZE_BYTES
 import com.guanshu.media.opengl.OesTextureProgram
+import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.checkGlError
 import com.guanshu.media.opengl.getAtrribLocation
 import com.guanshu.media.opengl.getUniformLocation
+import com.guanshu.media.opengl.updateTransformMatrix
 import com.guanshu.media.utils.DefaultSize
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -86,65 +89,34 @@ class SingleTextureFilter : BaseFilter(
     }
 
     override fun render(
-        textureId: Int,
-        textMatrix: FloatArray,
-        mediaResolution: Size,
-        screenResolution: Size,
+        textureData: TextureData,
+        viewResolution: Size,
     ) {
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
         GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT or GLES20.GL_COLOR_BUFFER_BIT)
         GLES20.glUseProgram(program)
         checkGlError("glUseProgram")
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
-        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId)
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureData.textureId)
 
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vertexVbos[0])
 
         Matrix.setIdentityM(mvpMatrix, 0)
-        adjustTransformMatrix(mvpMatrix, mediaResolution, screenResolution)
+        updateTransformMatrix(mvpMatrix, textureData.resolution, viewResolution)
+
+        // just a sample of scaling
+        Matrix.scaleM(mvpMatrix, 0, 0.8f, 0.8f, 1f)
 
         // 缩放纹理，会导致纹理坐标 >1 的使用 clamp_to_edge mode，出现像素重复
         // 建议缩放顶点坐标
 //        Matrix.scaleM(stMatrix, 0, 2f, 2f, 1f)
 
         GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
-        GLES20.glUniformMatrix4fv(stMatrixHandle, 1, false, textMatrix, 0)
+        GLES20.glUniformMatrix4fv(stMatrixHandle, 1, false, textureData.matrix, 0)
 
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         checkGlError("glDrawArrays")
 
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
-    }
-
-    /**
-     * TODO 这个可以优化成只做一次
-     */
-    private fun adjustTransformMatrix(
-        matrix: FloatArray,
-        mediaResolution: Size,
-        screenResolution: Size,
-    ) {
-        if (mediaResolution == DefaultSize || screenResolution == DefaultSize) {
-            return
-        }
-        val mediaAspectRatio = mediaResolution.width.toFloat() / mediaResolution.height
-        val viewAspectRatio = screenResolution.width.toFloat() / screenResolution.height
-
-        var scaleX = 1f
-        var scaleY = 1f
-        if (mediaAspectRatio > viewAspectRatio) {
-            // 视频比view更宽,x填满整个屏幕,y需要缩放，
-            val expectedHeight =
-                screenResolution.width.toFloat() / mediaResolution.width * mediaResolution.height
-            // 视频高度被默认拉伸填充了view，需要缩放
-            scaleY = expectedHeight / screenResolution.height
-        } else {
-            val expectedWidth =
-                screenResolution.height.toFloat() / mediaResolution.height * mediaResolution.width
-            scaleX = expectedWidth / screenResolution.width
-        }
-
-//        Matrix.scaleM(matrix, 0, scaleX, scaleY, 1f)
-        Matrix.scaleM(matrix, 0, scaleX * 0.8f, scaleY * 0.8f, 1f)
     }
 }

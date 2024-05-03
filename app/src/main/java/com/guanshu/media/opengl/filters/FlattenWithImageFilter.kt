@@ -34,12 +34,13 @@ import com.guanshu.media.opengl.FLOAT_SIZE_BYTES
 import com.guanshu.media.opengl.INT_SIZE_BYTES
 import com.guanshu.media.opengl.ImageTextureProgram
 import com.guanshu.media.opengl.OesTextureProgram
+import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.checkGlError
 import com.guanshu.media.opengl.createProgram
 import com.guanshu.media.opengl.getAtrribLocation
 import com.guanshu.media.opengl.getUniformLocation
 import com.guanshu.media.opengl.newTexture
-import com.guanshu.media.utils.DefaultSize
+import com.guanshu.media.opengl.updateTransformMatrix
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.FloatBuffer
@@ -177,37 +178,33 @@ class FlattenWithImageFilter : BaseFilter(
     }
 
     override fun render(
-        textureId: Int,
-        textMatrix: FloatArray,
-        mediaResolution: Size,
-        screenResolution: Size
+        textureData: TextureData,
+        viewResolution: Size,
     ) {
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
         glClear(GL_DEPTH_BUFFER_BIT or GL_COLOR_BUFFER_BIT)
 
-        renderOesTexture(textureId, textMatrix, mediaResolution, screenResolution)
+        renderOesTexture(textureData, viewResolution)
         renderImageTexture()
     }
 
     private fun renderOesTexture(
-        textureId: Int,
-        textMatrix: FloatArray,
-        mediaResolution: Size,
-        screenResolution: Size
+        textureData: TextureData,
+        viewResolution: Size,
     ) {
         glUseProgram(program)
         checkGlError("glUseProgram")
 
         val sTextureHandle = bitmapProgram.getUniformLocation("sTexture")
         glActiveTexture(GL_TEXTURE0)
-        glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId)
+        glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureData.textureId)
         GLES20.glUniform1i(sTextureHandle, 0)
 
         Matrix.setIdentityM(mvpMatrix, 0)
-        adjustTransformMatrix(mvpMatrix, mediaResolution, screenResolution)
+        updateTransformMatrix(mvpMatrix, textureData.resolution, viewResolution)
 
         glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
-        glUniformMatrix4fv(stMatrixHandle, 1, false, textMatrix, 0)
+        glUniformMatrix4fv(stMatrixHandle, 1, false, textureData.matrix, 0)
 
         glBindBuffer(GL_ARRAY_BUFFER, vertexVbos[0])
         glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vertextEbos[0])
@@ -283,35 +280,5 @@ class FlattenWithImageFilter : BaseFilter(
 
         glDisableVertexAttribArray(aPositionHandle)
         glDisableVertexAttribArray(aTextureHandle)
-    }
-
-    /**
-     * TODO 这个可以优化成只做一次
-     */
-    private fun adjustTransformMatrix(
-        matrix: FloatArray,
-        mediaResolution: Size,
-        screenResolution: Size,
-    ) {
-        if (mediaResolution == DefaultSize || screenResolution == DefaultSize) {
-            return
-        }
-        val mediaAspectRatio = mediaResolution.width.toFloat() / mediaResolution.height
-        val viewAspectRatio = screenResolution.width.toFloat() / screenResolution.height
-
-        var scaleX = 1f
-        var scaleY = 1f
-        if (mediaAspectRatio > viewAspectRatio) {
-            // 视频比view更宽,x填满整个屏幕,y需要缩放，
-            val expectedHeight =
-                screenResolution.width.toFloat() / mediaResolution.width * mediaResolution.height
-            // 视频高度被默认拉伸填充了view，需要缩放
-            scaleY = expectedHeight / screenResolution.height
-        } else {
-            val expectedWidth =
-                screenResolution.height.toFloat() / mediaResolution.height * mediaResolution.width
-            scaleX = expectedWidth / screenResolution.width
-        }
-        Matrix.scaleM(matrix, 0, scaleX, scaleY, 1f)
     }
 }

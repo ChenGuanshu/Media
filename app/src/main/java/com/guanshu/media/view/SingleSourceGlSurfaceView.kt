@@ -10,6 +10,7 @@ import android.util.Log
 import android.util.Size
 import android.view.Surface
 import com.google.android.exoplayer2.util.GlUtil
+import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.TextureRender
 import com.guanshu.media.utils.DefaultSize
 import java.util.concurrent.atomic.AtomicBoolean
@@ -23,11 +24,13 @@ class SingleSourceGlSurfaceView : GLSurfaceView {
     constructor(context: Context) : super(context, null)
     constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
 
-    private val stMatrix = FloatArray(16)
     private var surfaceTexture: SurfaceTexture? = null
     private var surface: Surface? = null
+    private var textureData: TextureData? = null
+
     private val frameAvailable = AtomicBoolean(false)
     private val textureRender = TextureRender()
+
     var onSurfaceCreate: ((Surface) -> Unit)? = null
         set(value) {
             if (surface != null) {
@@ -39,6 +42,7 @@ class SingleSourceGlSurfaceView : GLSurfaceView {
         set(value) {
             Log.i(TAG, "set camera resolution=$value")
 //            surfaceTexture?.setDefaultBufferSize(value.width, value.height)
+            textureData?.resolution = value
             field = value
         }
     var viewResolution = DefaultSize
@@ -62,6 +66,7 @@ class SingleSourceGlSurfaceView : GLSurfaceView {
                 requestRender()
             }
             surface = Surface(surfaceTexture)
+            textureData = TextureData(textureRender.textureId, FloatArray(16), mediaResolution)
             onSurfaceCreate?.invoke(surface!!)
         }
 
@@ -79,15 +84,14 @@ class SingleSourceGlSurfaceView : GLSurfaceView {
         override fun onDrawFrame(gl: GL10?) {
             if (frameAvailable.compareAndSet(true, false)) {
                 surfaceTexture?.updateTexImage()
-                Matrix.setIdentityM(stMatrix, 0)
-                surfaceTexture?.getTransformMatrix(stMatrix)
-                textureRender.drawFrame(
-                    surfaceTexture!!,
-                    stMatrix,
-                    mediaResolution,
-                    viewResolution,
-                )
+                Matrix.setIdentityM(textureData!!.matrix, 0)
+                surfaceTexture?.getTransformMatrix(textureData!!.matrix)
             }
+
+            textureRender.drawFrame(
+                textureData!!,
+                viewResolution,
+            )
         }
     }
 
