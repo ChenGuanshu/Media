@@ -81,12 +81,18 @@ class EglManager {
             Logger.w(TAG, "initEglSurface: already a surface")
             return
         }
-        eglSurface = EGL14.eglCreateWindowSurface(eglDisplay, eglConfig, surface, intArrayOf(EGL14.EGL_NONE), 0)
+        eglSurface = EGL14.eglCreateWindowSurface(
+            eglDisplay,
+            eglConfig,
+            surface,
+            intArrayOf(EGL14.EGL_NONE),
+            0
+        )
         if (eglSurface == null || eglSurface === EGL14.EGL_NO_SURFACE) {
             throw RuntimeException("Unable to create EGL surface")
         }
 
-        Logger.d(TAG,"initEglSurface, $eglSurface")
+        Logger.d(TAG, "initEglSurface, $eglSurface")
     }
 
     fun makeEglCurrent() {
@@ -98,7 +104,7 @@ class EglManager {
         if (!EGL14.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
             throw RuntimeException("Unable to make EGL context and surface current")
         }
-        Logger.d(TAG,"makeEglCurrent")
+        Logger.d(TAG, "makeEglCurrent")
     }
 
     fun makeUnEglCurrent() {
@@ -115,10 +121,15 @@ class EglManager {
         ) {
             throw RuntimeException("Unable to make EGL context and surface current")
         }
-        Logger.d(TAG,"makeUnEglCurrent")
+        Logger.d(TAG, "makeUnEglCurrent")
     }
 
     fun swapBuffer() {
+        if (eglSurface == null) {
+            Logger.e(TAG, "swapBuffer: eglSurface is null")
+            return
+        }
+
         if (!EGL14.eglSwapBuffers(eglDisplay, eglSurface)) {
             val error = EGL14.eglGetError()
             Logger.e(TAG, "swapBuffer failed, error =$error")
@@ -130,7 +141,7 @@ class EglManager {
             makeUnEglCurrent()
             EGL14.eglDestroySurface(eglDisplay, eglSurface)
             eglSurface = null
-            Logger.d(TAG,"releaseEglSurface")
+            Logger.d(TAG, "releaseEglSurface")
         }
     }
 
@@ -138,6 +149,6 @@ class EglManager {
         releaseEglSurface()
         EGL14.eglDestroyContext(eglDisplay, eglContext)
         EGL14.eglTerminate(eglDisplay)
-        Logger.d(TAG,"release")
+        Logger.d(TAG, "release")
     }
 }

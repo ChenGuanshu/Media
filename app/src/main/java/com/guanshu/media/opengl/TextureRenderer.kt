@@ -56,5 +56,6 @@ class TextureRender(
     ) {
         checkGlError("onDrawFrame start")
         filter.render(textureData, viewResolution)
+        checkGlError("onDrawFrame end")
     }
 }

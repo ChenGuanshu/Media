@@ -29,14 +29,18 @@ private fun loadShader(shaderType: Int, source: String): Int {
 fun createProgram(vertexSource: String, fragmentSource: String): Int {
     val vertexShader = loadShader(GLES20.GL_VERTEX_SHADER, vertexSource)
     if (vertexShader == 0) {
-        Logger.w(TAG,"failed to load vertex shader $vertexSource")
+        Logger.w(TAG, "load vertexShader:${GLES20.glGetShaderInfoLog(vertexShader)}")
+        Logger.w(TAG, "failed to load vertex shader $vertexSource")
         return 0
     }
+
     val pixelShader = loadShader(GLES20.GL_FRAGMENT_SHADER, fragmentSource)
     if (pixelShader == 0) {
-        Logger.w(TAG,"failed to load fragment shader $fragmentSource")
+        Logger.w(TAG, "load pixelShader:${GLES20.glGetShaderInfoLog(pixelShader)}")
+        Logger.w(TAG, "failed to load fragment shader $fragmentSource")
         return 0
     }
+
     var program = GLES20.glCreateProgram()
     checkGlError("glCreateProgram")
     if (program == 0) {
@@ -47,6 +51,8 @@ fun createProgram(vertexSource: String, fragmentSource: String): Int {
     GLES20.glAttachShader(program, pixelShader)
     checkGlError("glAttachShader")
     GLES20.glLinkProgram(program)
+    checkGlError("glLinkProgram")
+
     val linkStatus = IntArray(1)
     GLES20.glGetProgramiv(program, GLES20.GL_LINK_STATUS, linkStatus, 0)
     if (linkStatus[0] != GLES20.GL_TRUE) {
@@ -55,6 +61,7 @@ fun createProgram(vertexSource: String, fragmentSource: String): Int {
         GLES20.glDeleteProgram(program)
         program = 0
     }
+
     return program
 }
 

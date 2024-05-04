@@ -27,7 +27,7 @@ class OpenglTextureView : TextureView {
     private var glHandler: Handler? = null
 
     @Volatile
-    private var displaySurfaceTexture: SurfaceTexture? = null
+    private var displaySurface: SurfaceTexture? = null
 
     private var textureId = -12345
     private var surfaceTexture: SurfaceTexture? = null
@@ -35,7 +35,7 @@ class OpenglTextureView : TextureView {
     private var textureData: TextureData? = null
 
     private val frameAvailable = AtomicBoolean(false)
-    private val textureRender = TextureRender(4)
+    private val textureRender = TextureRender(1)
 
     var onSurfaceCreate: ((Surface) -> Unit)? = null
         set(value) {
@@ -73,13 +73,13 @@ class OpenglTextureView : TextureView {
                 height: Int
             ) {
                 Logger.d(TAG, "onSurfaceTextureAvailable: $surface, $width*$height")
-                displaySurfaceTexture = surface
+                displaySurface = surface
                 maybeInitEglSurface()
             }
 
             override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
                 // do Nothing
-                Logger.v(TAG,"onSurfaceTextureUpdated")
+//                Logger.v(TAG,"onSurfaceTextureUpdated")
             }
 
             override fun onSurfaceTextureSizeChanged(
@@ -89,7 +89,7 @@ class OpenglTextureView : TextureView {
             ) {
                 Logger.d(TAG, "onSurfaceTextureSizeChanged: $surface, $width*$height")
                 viewResolution = Size(width, height)
-                displaySurfaceTexture?.setDefaultBufferSize(width, height)
+                displaySurface?.setDefaultBufferSize(width, height)
 
                 postOrRun {
                     GLES20.glViewport(0, 0, width, height)
@@ -98,7 +98,7 @@ class OpenglTextureView : TextureView {
 
             override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
                 Logger.d(TAG, "onSurfaceTextureDestroyed: $surface")
-                displaySurfaceTexture = null
+                displaySurface = null
 
                 maybeReleaseEglSurface()
                 return true
@@ -159,6 +159,9 @@ class OpenglTextureView : TextureView {
                 return@postOrRun
             }
 
+//            GLES20.glClearColor(1f, 0f, 0f, 0f)
+//            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+
             // render dirty or not
             textureRender.drawFrame(
                 listOf(textureData!!),
@@ -170,9 +173,9 @@ class OpenglTextureView : TextureView {
     }
 
     private fun maybeInitEglSurface() {
-        Logger.d(TAG, "maybeInitEglSurface: $displaySurfaceTexture")
+        Logger.d(TAG, "maybeInitEglSurface: $displaySurface")
         postOrRun {
-            val surface = displaySurfaceTexture ?: return@postOrRun
+            val surface = displaySurface ?: return@postOrRun
             Logger.d(TAG, "maybeInitEglSurface run")
             egl.releaseEglSurface()
 

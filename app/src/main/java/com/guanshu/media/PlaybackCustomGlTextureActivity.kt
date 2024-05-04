@@ -2,7 +2,6 @@ package com.guanshu.media
 
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.util.Size
 import androidx.activity.ComponentActivity
 import com.google.android.exoplayer2.ExoPlayer
@@ -13,7 +12,6 @@ import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.analytics.AnalyticsListener
 import com.guanshu.media.utils.Logger
 import com.guanshu.media.view.OpenglTextureView
-import com.guanshu.media.view.SingleSourceGlSurfaceView
 
 private const val TAG = "PlaybackCustomGlTextureActivity"
 private const val VIDEO_PATH = "/sdcard/DCIM/Camera/lv_0_20240122222838.mp4"
@@ -63,6 +61,7 @@ class PlaybackCustomGlTextureActivity : ComponentActivity(), Player.Listener {
         Logger.i(TAG, "onResume")
         surfaceView.onSurfaceCreate = { surface ->
             surfaceView.post {
+                Logger.i(TAG, "onResume, setSurface:$surface")
                 this.player?.setVideoSurface(surface)
                 this.player?.playWhenReady = true
             }

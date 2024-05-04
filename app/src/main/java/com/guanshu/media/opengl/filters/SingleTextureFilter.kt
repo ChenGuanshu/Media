@@ -22,9 +22,9 @@ import java.nio.ByteOrder
 private val verticesData = floatArrayOf(
     // X, Y, Z, U, V
     -1.0f, -1.0f, 0f, 0f, 0f,
-    1.0f, -1.0f, 0f, 1f, 0f,
-    -1.0f, 1.0f, 0f, 0f, 1f,
-    1.0f, 1.0f, 0f, 1f, 1f,
+    0.0f, -1.0f, 0f, 1f, 0f,
+    -1.0f, 0.0f, 0f, 0f, 1f,
+    0.0f, 0.0f, 0f, 1f, 1f,
 )
 
 private const val TAG = "SingleTextureFilter"
@@ -76,9 +76,12 @@ class SingleTextureFilter : BaseFilter(
         viewResolution: Size,
     ) {
         val textureData = textureDatas.first()
+//
+//        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
+//        GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT or GLES20.GL_COLOR_BUFFER_BIT)
+        GLES20.glClearColor(1f, 0f, 0f, 0f)
+        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
 
-        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
-        GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT or GLES20.GL_COLOR_BUFFER_BIT)
         GLES20.glUseProgram(program)
         checkGlError("glUseProgram")
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
@@ -107,7 +110,6 @@ class SingleTextureFilter : BaseFilter(
         Matrix.setIdentityM(mvpMatrix, 0)
         updateTransformMatrix(mvpMatrix, textureData.resolution, viewResolution)
 
-        // just a sample of scaling
         Matrix.scaleM(mvpMatrix, 0, 0.8f, 0.8f, 1f)
 
         // 缩放纹理，会导致纹理坐标 >1 的使用 clamp_to_edge mode，出现像素重复
