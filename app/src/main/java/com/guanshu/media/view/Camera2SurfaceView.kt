@@ -2,7 +2,6 @@ package com.guanshu.media.view
 
 import android.content.Context
 import android.util.AttributeSet
-import android.util.Log
 import android.view.SurfaceView
 import com.guanshu.media.utils.Logger
 

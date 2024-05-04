@@ -34,7 +34,8 @@ class TextureRender(
 ) {
 
     private lateinit var filter: BaseFilter
-    private var init = false
+    var init = false
+        private set
 
 
     /**
