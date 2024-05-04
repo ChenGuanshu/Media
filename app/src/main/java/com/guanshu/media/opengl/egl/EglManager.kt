@@ -75,17 +75,18 @@ class EglManager {
         Logger.i(TAG, "init done:$eglContext, $eglDisplay")
     }
 
-    fun initEglSurface(surface: Surface) {
+    // Surface/SurfaceTexture
+    fun initEglSurface(surface: Any) {
         if (eglSurface != null) {
             Logger.w(TAG, "initEglSurface: already a surface")
             return
         }
-        eglSurface = EGL14.eglCreateWindowSurface(eglDisplay, eglConfig, surface, null, 0)
+        eglSurface = EGL14.eglCreateWindowSurface(eglDisplay, eglConfig, surface, intArrayOf(EGL14.EGL_NONE), 0)
         if (eglSurface == null || eglSurface === EGL14.EGL_NO_SURFACE) {
             throw RuntimeException("Unable to create EGL surface")
         }
 
-        Logger.d(TAG,"initEglSurface")
+        Logger.d(TAG,"initEglSurface, $eglSurface")
     }
 
     fun makeEglCurrent() {

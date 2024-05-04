@@ -38,12 +38,14 @@ class PlaybackCustomGlSurfaceActivity : ComponentActivity(), Player.Listener {
                 format: Format
             ) {
                 super.onVideoInputFormatChanged(eventTime, format)
-                Logger.i(TAG, "input format=$format")
                 val size = when (format.rotationDegrees) {
                     90, 270 -> Size(format.height, format.width)
                     else -> Size(format.width, format.height)
                 }
-                surfaceView.mediaResolution = size
+                if(size != surfaceView.mediaResolution){
+                    Logger.i(TAG, "input format=$format")
+                    surfaceView.mediaResolution = size
+                }
             }
         })
 

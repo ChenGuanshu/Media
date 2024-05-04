@@ -46,7 +46,7 @@ class OpenglTextureView : TextureView {
         }
     var mediaResolution = DefaultSize
         set(value) {
-            Logger.i(TAG, "set camera resolution=$value")
+            Logger.i(TAG, "set media resolution=$value")
             textureData?.resolution = value
             field = value
         }
@@ -79,6 +79,7 @@ class OpenglTextureView : TextureView {
 
             override fun onSurfaceTextureUpdated(surface: SurfaceTexture) {
                 // do Nothing
+                Logger.v(TAG,"onSurfaceTextureUpdated")
             }
 
             override fun onSurfaceTextureSizeChanged(
@@ -88,7 +89,8 @@ class OpenglTextureView : TextureView {
             ) {
                 Logger.d(TAG, "onSurfaceTextureSizeChanged: $surface, $width*$height")
                 viewResolution = Size(width, height)
-                surfaceTexture?.setDefaultBufferSize(width, height)
+                displaySurfaceTexture?.setDefaultBufferSize(width, height)
+
                 postOrRun {
                     GLES20.glViewport(0, 0, width, height)
                 }
@@ -174,7 +176,7 @@ class OpenglTextureView : TextureView {
             Logger.d(TAG, "maybeInitEglSurface run")
             egl.releaseEglSurface()
 
-            egl.initEglSurface(Surface(surface))
+            egl.initEglSurface(surface)
             egl.makeEglCurrent()
         }
     }

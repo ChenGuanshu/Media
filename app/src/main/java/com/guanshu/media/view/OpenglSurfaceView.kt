@@ -47,7 +47,7 @@ class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
         }
     var mediaResolution = DefaultSize
         set(value) {
-            Logger.i(TAG, "set camera resolution=$value")
+            Logger.i(TAG, "set media resolution=$value")
             textureData?.resolution = value
             field = value
         }
@@ -137,6 +137,8 @@ class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
         postOrRun {
             val surface = surfaceHolder?.surface ?: return@postOrRun
             Logger.d(TAG, "maybeInitEglSurface run")
+            egl.releaseEglSurface()
+
             egl.initEglSurface(surface)
             egl.makeEglCurrent()
         }
@@ -153,15 +155,18 @@ class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
 
     override fun surfaceCreated(holder: SurfaceHolder) {
         Logger.d(TAG, "surfaceCreated: $holder")
-        surfaceHolder = holder
+        if (holder == surfaceHolder){
+            return
+        }
 
+        surfaceHolder = holder
         maybeInitEglSurface()
     }
 
     override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
         Logger.d(TAG, "surfaceChanged: $holder, $format, $width*$height")
-        surfaceHolder = holder
 
+        surfaceHolder = holder
         viewResolution = Size(width, height)
         surfaceTexture?.setDefaultBufferSize(width, height)
         postOrRun {
@@ -171,8 +176,8 @@ class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
         Logger.d(TAG, "surfaceCreated: $holder")
-        surfaceHolder = null
 
+        surfaceHolder = null
         maybeReleaseEglSurface()
     }
 
