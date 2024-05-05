@@ -1,9 +1,11 @@
 package com.guanshu.media.opengl
 
+import android.graphics.Bitmap
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
-import android.util.Log
 import com.guanshu.media.utils.Logger
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 private const val TAG = "OpenGL"
 
@@ -93,11 +95,25 @@ fun checkGlError(op: String) {
     }
 }
 
-fun newTexture(textures: IntArray, textureTarget: Int = GLES11Ext.GL_TEXTURE_EXTERNAL_OES) {
+fun newTexture(
+    textures: IntArray,
+    textureTarget: Int = GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
+    width: Int = -1,
+    height: Int = -1,
+) {
     GLES20.glGenTextures(textures.size, textures, 0)
     textures.forEach { textureId ->
         GLES20.glBindTexture(textureTarget, textureId)
         checkGlError("glBindTexture mTextureID")
+
+        if (textureTarget == GLES20.GL_TEXTURE_2D && width != -1) {
+            Logger.d(TAG, "newTexture,glTexImage2D from $width")
+            GLES20.glTexImage2D(
+                GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, width, height,
+                0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null
+            )
+        }
+
         GLES20.glTexParameterf(
             textureTarget, GLES20.GL_TEXTURE_MIN_FILTER,
             GLES20.GL_NEAREST.toFloat()
@@ -116,4 +132,15 @@ fun newTexture(textures: IntArray, textureTarget: Int = GLES11Ext.GL_TEXTURE_EXT
         )
         checkGlError("glTexParameter")
     }
+}
+
+fun readToBitmap(width: Int, height: Int): Bitmap {
+    val buf = ByteBuffer.allocateDirect(width * height * 4)
+    buf.order(ByteOrder.LITTLE_ENDIAN)
+    GLES20.glReadPixels(0, 0, width, height, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, buf)
+    buf.rewind()
+
+    val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+    bmp.copyPixelsFromBuffer(buf)
+    return bmp
 }

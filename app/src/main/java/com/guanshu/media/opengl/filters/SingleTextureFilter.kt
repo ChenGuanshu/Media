@@ -19,9 +19,9 @@ import java.nio.ByteOrder
 private val verticesData = floatArrayOf(
     // X, Y, Z, U, V
     -1.0f, -1.0f, 0f, 0f, 0f,
-    0.0f, -1.0f, 0f, 1f, 0f,
-    -1.0f, 0.0f, 0f, 0f, 1f,
-    0.0f, 0.0f, 0f, 1f, 1f,
+    1.0f, -1.0f, 0f, 1f, 0f,
+    -1.0f, 1.0f, 0f, 0f, 1f,
+    1.0f, 1.0f, 0f, 1f, 1f,
 )
 
 private const val TAG = "SingleTextureFilter"
@@ -105,7 +105,7 @@ class SingleTextureFilter : BaseFilter(
         Matrix.setIdentityM(mvpMatrix, 0)
         updateTransformMatrix(mvpMatrix, textureData.resolution, viewResolution)
 
-        Matrix.scaleM(mvpMatrix, 0, 0.8f, 0.8f, 1f)
+//        Matrix.scaleM(mvpMatrix, 0, 0.8f, 0.8f, 1f)
 
         // 缩放纹理，会导致纹理坐标 >1 的使用 clamp_to_edge mode，出现像素重复
         // 建议缩放顶点坐标

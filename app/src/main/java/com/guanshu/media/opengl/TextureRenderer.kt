@@ -4,6 +4,7 @@ import android.util.Size
 import com.guanshu.media.opengl.filters.BaseFilter
 import com.guanshu.media.opengl.filters.FlattenFilter
 import com.guanshu.media.opengl.filters.FlattenWithImageFilter
+import com.guanshu.media.opengl.filters.SingleTextureFboFilter
 import com.guanshu.media.opengl.filters.SingleTextureFilter
 import com.guanshu.media.opengl.filters.TextureWithImageFilter
 import com.guanshu.media.opengl.filters.TwoOesTextureFilter
@@ -21,6 +22,7 @@ val filterIdMap = hashMapOf(
     5 to TwoOesTextureFilter::class.java,
     6 to TwoOesTextureFilter2::class.java,
     7 to TwoOesTextureMixFilter::class.java,
+    8 to SingleTextureFboFilter::class.java,
 )
 
 class TextureData(
