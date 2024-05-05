@@ -3,9 +3,7 @@ package com.guanshu.media.opengl.filters
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.opengl.Matrix
-import android.util.Log
 import android.util.Size
-import androidx.compose.animation.core.updateTransition
 import com.guanshu.media.opengl.FLOAT_SIZE_BYTES
 import com.guanshu.media.opengl.OesTextureProgram
 import com.guanshu.media.opengl.TextureData
@@ -13,7 +11,6 @@ import com.guanshu.media.opengl.checkGlError
 import com.guanshu.media.opengl.getAtrribLocation
 import com.guanshu.media.opengl.getUniformLocation
 import com.guanshu.media.opengl.updateTransformMatrix
-import com.guanshu.media.utils.DefaultSize
 import com.guanshu.media.utils.Logger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -76,11 +73,9 @@ class SingleTextureFilter : BaseFilter(
         viewResolution: Size,
     ) {
         val textureData = textureDatas.first()
-//
-//        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
-//        GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT or GLES20.GL_COLOR_BUFFER_BIT)
-        GLES20.glClearColor(1f, 0f, 0f, 0f)
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
+
+        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
+        GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT or GLES20.GL_COLOR_BUFFER_BIT)
 
         GLES20.glUseProgram(program)
         checkGlError("glUseProgram")

@@ -162,7 +162,7 @@ class OpenglTextureView : TextureView {
 //            GLES20.glClearColor(1f, 0f, 0f, 0f)
 //            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
 
-            // render dirty or not
+            // TODO FIXFIXIIIXIXIXIXIXIFIFIX
             textureRender.drawFrame(
                 listOf(textureData!!),
                 viewResolution,
