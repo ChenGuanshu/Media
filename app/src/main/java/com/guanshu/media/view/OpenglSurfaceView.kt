@@ -36,7 +36,8 @@ class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
     private var textureData: TextureData? = null
 
     private val frameAvailable = AtomicBoolean(false)
-    private val textureRender = TextureRender(4)
+    private val textureRender = TextureRender(8)
+//    private val textureRender = TextureRender(1)
 
     var onSurfaceCreate: ((Surface) -> Unit)? = null
         set(value) {
