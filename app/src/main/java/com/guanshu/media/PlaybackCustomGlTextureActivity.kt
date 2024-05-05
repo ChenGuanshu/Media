@@ -2,7 +2,6 @@ package com.guanshu.media
 
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.util.Size
 import androidx.activity.ComponentActivity
 import com.google.android.exoplayer2.ExoPlayer
@@ -12,20 +11,21 @@ import com.google.android.exoplayer2.PlaybackException
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.analytics.AnalyticsListener
 import com.guanshu.media.utils.Logger
-import com.guanshu.media.view.SingleSourceGlSurfaceView
+import com.guanshu.media.view.OpenglTextureView
 
-private const val TAG = "PlaybackGlSurfaceActivity"
+private const val TAG = "PlaybackCustomGlTextureActivity"
 private const val VIDEO_PATH = "/sdcard/DCIM/Camera/lv_0_20240122222838.mp4"
 
-class PlaybackGlSurfaceActivity : ComponentActivity(), Player.Listener {
+class PlaybackCustomGlTextureActivity : ComponentActivity(), Player.Listener {
 
-    private lateinit var surfaceView: SingleSourceGlSurfaceView
+    private lateinit var surfaceView: OpenglTextureView
     private var player: ExoPlayer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_playback_to_glsurface)
+        setContentView(R.layout.activity_playback_to_custom_gltexture)
         surfaceView = findViewById(R.id.glsurface_playback)
+        surfaceView.init()
 
         val player = ExoPlayer.Builder(this.applicationContext).build()
         player.setMediaItem(MediaItem.fromUri(Uri.parse(VIDEO_PATH)))
@@ -61,6 +61,7 @@ class PlaybackGlSurfaceActivity : ComponentActivity(), Player.Listener {
         Logger.i(TAG, "onResume")
         surfaceView.onSurfaceCreate = { surface ->
             surfaceView.post {
+                Logger.i(TAG, "onResume, setSurface:$surface")
                 this.player?.setVideoSurface(surface)
                 this.player?.playWhenReady = true
             }
@@ -72,5 +73,10 @@ class PlaybackGlSurfaceActivity : ComponentActivity(), Player.Listener {
         Logger.i(TAG, "onPause")
         this.player?.playWhenReady = false
         this.player?.setVideoSurface(null)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        surfaceView.release()
     }
 }

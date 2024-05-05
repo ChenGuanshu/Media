@@ -3,9 +3,7 @@ package com.guanshu.media.opengl.filters
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.opengl.Matrix
-import android.util.Log
 import android.util.Size
-import androidx.compose.animation.core.updateTransition
 import com.guanshu.media.opengl.FLOAT_SIZE_BYTES
 import com.guanshu.media.opengl.OesTextureProgram
 import com.guanshu.media.opengl.TextureData
@@ -13,7 +11,6 @@ import com.guanshu.media.opengl.checkGlError
 import com.guanshu.media.opengl.getAtrribLocation
 import com.guanshu.media.opengl.getUniformLocation
 import com.guanshu.media.opengl.updateTransformMatrix
-import com.guanshu.media.utils.DefaultSize
 import com.guanshu.media.utils.Logger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -22,9 +19,9 @@ import java.nio.ByteOrder
 private val verticesData = floatArrayOf(
     // X, Y, Z, U, V
     -1.0f, -1.0f, 0f, 0f, 0f,
-    1.0f, -1.0f, 0f, 1f, 0f,
-    -1.0f, 1.0f, 0f, 0f, 1f,
-    1.0f, 1.0f, 0f, 1f, 1f,
+    0.0f, -1.0f, 0f, 1f, 0f,
+    -1.0f, 0.0f, 0f, 0f, 1f,
+    0.0f, 0.0f, 0f, 1f, 1f,
 )
 
 private const val TAG = "SingleTextureFilter"
@@ -79,6 +76,7 @@ class SingleTextureFilter : BaseFilter(
 
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
         GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT or GLES20.GL_COLOR_BUFFER_BIT)
+
         GLES20.glUseProgram(program)
         checkGlError("glUseProgram")
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
@@ -107,7 +105,6 @@ class SingleTextureFilter : BaseFilter(
         Matrix.setIdentityM(mvpMatrix, 0)
         updateTransformMatrix(mvpMatrix, textureData.resolution, viewResolution)
 
-        // just a sample of scaling
         Matrix.scaleM(mvpMatrix, 0, 0.8f, 0.8f, 1f)
 
         // 缩放纹理，会导致纹理坐标 >1 的使用 clamp_to_edge mode，出现像素重复

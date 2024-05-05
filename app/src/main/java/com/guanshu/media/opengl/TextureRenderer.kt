@@ -34,7 +34,8 @@ class TextureRender(
 ) {
 
     private lateinit var filter: BaseFilter
-    private var init = false
+    var init = false
+        private set
 
 
     /**
@@ -55,5 +56,6 @@ class TextureRender(
     ) {
         checkGlError("onDrawFrame start")
         filter.render(textureData, viewResolution)
+        checkGlError("onDrawFrame end")
     }
 }

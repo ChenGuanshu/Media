@@ -43,7 +43,7 @@ class SingleSourceGlSurfaceView : GLSurfaceView {
         }
     var mediaResolution = DefaultSize
         set(value) {
-            Logger.i(TAG, "set camera resolution=$value")
+            Logger.i(TAG, "set media resolution=$value")
 //            surfaceTexture?.setDefaultBufferSize(value.width, value.height)
             textureData?.resolution = value
             field = value

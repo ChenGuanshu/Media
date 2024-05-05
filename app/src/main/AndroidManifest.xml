@@ -23,6 +23,7 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Media"
+        android:hardwareAccelerated="true"
         tools:targetApi="31">
 
         <activity
@@ -40,6 +41,8 @@
         <activity android:name=".Camera2SurfaceActivity" />
         <activity android:name=".Camera2GlSurfaceActivity" />
         <activity android:name=".PlaybackGlSurfaceActivity" />
+        <activity android:name=".PlaybackCustomGlSurfaceActivity" />
+        <activity android:name=".PlaybackCustomGlTextureActivity" />
         <activity android:name=".CameraAndPlaybackGlSurfaceActivity" />
 
     </application>

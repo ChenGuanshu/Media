@@ -1,6 +1,6 @@
 package com.guanshu.media.opengl.filters
 
-import android.util.Log
+import android.opengl.GLES20
 import android.util.Size
 import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.createProgram
@@ -21,10 +21,11 @@ abstract class BaseFilter(
         if (init) return
         init = true
 
-        Logger.i(TAG, "init")
+        Logger.d(TAG, "init")
         program = createProgram(vertexShader, fragmentShader)
         if (program == 0) {
-            throw RuntimeException("failed creating program")
+            val str = GLES20.glGetProgramInfoLog(program)
+            throw RuntimeException("failed creating program:$str")
         }
     }
 
