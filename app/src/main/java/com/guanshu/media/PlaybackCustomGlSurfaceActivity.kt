@@ -11,10 +11,10 @@ import com.google.android.exoplayer2.PlaybackException
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.analytics.AnalyticsListener
 import com.guanshu.media.utils.Logger
+import com.guanshu.media.utils.VIDEO_PATH
 import com.guanshu.media.view.OpenglSurfaceView
 
 private const val TAG = "PlaybackCustomGlSurfaceActivity"
-private const val VIDEO_PATH = "/sdcard/DCIM/Camera/lv_0_20240122222838.mp4"
 
 class PlaybackCustomGlSurfaceActivity : ComponentActivity(), Player.Listener {
 
@@ -42,9 +42,9 @@ class PlaybackCustomGlSurfaceActivity : ComponentActivity(), Player.Listener {
                     90, 270 -> Size(format.height, format.width)
                     else -> Size(format.width, format.height)
                 }
-                if(size != surfaceView.mediaResolution){
+                if (size != surfaceView.getMediaResolution(0)) {
                     Logger.i(TAG, "input format=$format")
-                    surfaceView.mediaResolution = size
+                    surfaceView.setMediaResolution(0, size)
                 }
             }
         })
@@ -61,7 +61,7 @@ class PlaybackCustomGlSurfaceActivity : ComponentActivity(), Player.Listener {
         Logger.i(TAG, "onResume")
         surfaceView.onSurfaceCreate = { surface ->
             surfaceView.post {
-                this.player?.setVideoSurface(surface)
+                this.player?.setVideoSurface(surface.first())
                 this.player?.playWhenReady = true
             }
         }

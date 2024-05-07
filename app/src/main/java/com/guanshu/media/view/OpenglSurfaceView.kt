@@ -23,41 +23,6 @@ private const val TAG = "OpenglSurfaceView"
 
 class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
 
-    private val egl = EglManager()
-    private lateinit var glThread: HandlerThread
-    private lateinit var glHandler: Handler
-
-    @Volatile
-    private var surfaceHolder: SurfaceHolder? = null
-
-    private var textureId = -12345
-    private var surfaceTexture: SurfaceTexture? = null
-    private var surface: Surface? = null
-    private var textureData: TextureData? = null
-
-    private val frameAvailable = AtomicBoolean(false)
-    private val textureRender = TextureRender(8)
-//    private val textureRender = TextureRender(1)
-
-    var onSurfaceCreate: ((Surface) -> Unit)? = null
-        set(value) {
-            if (surface != null) {
-                value?.invoke(surface!!)
-            }
-            field = value
-        }
-    var mediaResolution = DefaultSize
-        set(value) {
-            Logger.i(TAG, "set media resolution=$value")
-            textureData?.resolution = value
-            field = value
-        }
-    var viewResolution = DefaultSize
-        set(value) {
-            Logger.i(TAG, "set view resolution=$value")
-            field = value
-        }
-
     constructor(context: Context) : super(context, null)
     constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
     constructor(context: Context, attrs: AttributeSet, defStyleAttr: Int) : super(
@@ -67,69 +32,162 @@ class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
         0,
     )
 
+    private val egl = EglManager()
+    private var glThread: HandlerThread? = null
+    private var glHandler: Handler? = null
+
+    @Volatile
+    private var surfaceHolder: SurfaceHolder? = null
+
+    private lateinit var textureIds: IntArray
+    private val surfaceTextures = arrayListOf<SurfaceTexture>()
+    private val surfaces = arrayListOf<Surface>()
+    private val textureDatas = arrayListOf<TextureData>()
+    private val frameAvailables = hashMapOf<SurfaceTexture, AtomicBoolean>()
+
+    private lateinit var textureRender: TextureRender
+    var filterId = 8
+    var renderingMode: RenderingMode = RenderingMode.RenderWhenDirty
+        set(value) {
+            maybeScheduleRender()
+            Logger.d(TAG, "setRenderingMode:$value")
+            field = value
+        }
+
+    fun setMediaResolution(index: Int, size: Size) {
+        textureDatas[index].resolution = size
+    }
+
+    fun getMediaResolution(index: Int): Size? {
+        return textureDatas.getOrNull(index)?.resolution
+    }
+
+    var onSurfaceCreate: ((List<Surface>) -> Unit)? = null
+        set(value) {
+            value?.invoke(surfaces)
+            field = value
+        }
+
+    var viewResolution = DefaultSize
+        set(value) {
+            Logger.i(TAG, "set view resolution=$value")
+            field = value
+        }
+
+    var onDisplaySurfaceCreate: (() -> Unit)? = null
+        set(value) {
+            if (surfaceHolder != null) {
+                value?.invoke()
+            }
+            field = value
+        }
+
     init {
         holder.addCallback(this)
     }
 
-    fun init() {
+    fun init(oesTextureNum: Int = 1) {
         Logger.d(TAG, "init")
-        glThread = HandlerThread(TAG)
+        val glThread = HandlerThread(TAG)
         glThread.start()
+        this.glThread = glThread
+
         glHandler = Handler(glThread.looper)
-        glHandler.post {
+        glHandler?.post {
             Logger.d(TAG, "init run")
             egl.init()
             maybeInitEglSurface()
 
-            val textures = IntArray(1)
-            newTexture(textures)
-            textureId = textures[0]
-            surfaceTexture = SurfaceTexture(textureId)
-            surfaceTexture?.setOnFrameAvailableListener {
-                frameAvailable.set(true)
-                render()
-            }
-            surface = Surface(surfaceTexture)
-            textureData = TextureData(textureId, FloatArray(16), mediaResolution)
-            onSurfaceCreate?.invoke(surface!!)
+            textureIds = IntArray(oesTextureNum)
+            newTexture(textureIds)
 
+            textureIds.forEach {
+                val surfaceTexture = SurfaceTexture(it)
+                frameAvailables[surfaceTexture] = AtomicBoolean(false)
+                surfaceTexture.setOnFrameAvailableListener {
+                    frameAvailables[surfaceTexture]?.set(true)
+                    surfaceTexture.onFrameAvailable()
+                }
+                surfaceTextures.add(surfaceTexture)
+                surfaces.add(Surface(surfaceTexture))
+                textureDatas.add(TextureData(it, FloatArray(16), DefaultSize))
+            }
+
+            onSurfaceCreate?.invoke(surfaces)
+
+            textureRender = TextureRender(filterId)
             textureRender.init()
+
+            maybeScheduleRender()
         }
     }
 
     fun release() {
         Logger.d(TAG, "release")
-        if (!this::glThread.isInitialized) {
+        if (glThread == null) {
             Logger.w(TAG, "glThread is not init")
             return
         }
+        glHandler?.removeCallbacksAndMessages(null)
         postOrRun {
             Logger.d(TAG, "release run")
             maybeReleaseEglSurface()
             egl.release()
         }
-        glThread.quitSafely()
+        glThread?.quitSafely()
+
+        glThread = null
+        glHandler = null
     }
 
-    private fun render() {
+    private fun SurfaceTexture.onFrameAvailable() {
+        when (renderingMode) {
+            RenderingMode.RenderWhenDirty -> requestRender()
+            is RenderingMode.RenderFixedRate -> requestUpdate(this)
+        }
+    }
+
+    private fun maybeScheduleRender() {
+        val fps = (renderingMode as? RenderingMode.RenderFixedRate)?.fps ?: return
+        val delayMs = 1000L / fps
+
+        glHandler?.removeCallbacksAndMessages(null)
+        glHandler?.postDelayed({
+//            Logger.v(TAG, "schedule render: $delayMs")
+            requestRender()
+        }, delayMs)
+    }
+
+    private fun requestUpdate(surfaceTexture: SurfaceTexture) {
         postOrRun {
-            if (frameAvailable.compareAndSet(true, false)) {
-                surfaceTexture?.updateTexImage()
-                Matrix.setIdentityM(textureData!!.matrix, 0)
-                surfaceTexture?.getTransformMatrix(textureData!!.matrix)
+            val frameAvail = frameAvailables[surfaceTexture]!!
+            val textureData = textureDatas[surfaceTextures.indexOf(surfaceTexture)]
+            if (frameAvail.compareAndSet(true, false)) {
+                surfaceTexture.updateTexImage()
+                Matrix.setIdentityM(textureData.matrix, 0)
+                surfaceTexture.getTransformMatrix(textureData.matrix)
             }
+        }
+    }
+
+    private fun requestRender() {
+        postOrRun {
+            frameAvailables.keys.forEach { requestUpdate(it) }
 
             if (!textureRender.init) {
+                Logger.w(TAG, "render: textureRenderer not init")
                 return@postOrRun
             }
 
             // render dirty or not
             textureRender.drawFrame(
-                listOf(textureData!!),
+                textureDatas,
                 viewResolution,
             )
 
             egl.swapBuffer()
+
+            maybeScheduleRender()
         }
     }
 
@@ -156,11 +214,12 @@ class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
 
     override fun surfaceCreated(holder: SurfaceHolder) {
         Logger.d(TAG, "surfaceCreated: $holder")
-        if (holder == surfaceHolder){
+        if (holder == surfaceHolder) {
             return
         }
 
         surfaceHolder = holder
+        onDisplaySurfaceCreate?.invoke()
         maybeInitEglSurface()
     }
 
@@ -169,7 +228,7 @@ class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
 
         surfaceHolder = holder
         viewResolution = Size(width, height)
-        surfaceTexture?.setDefaultBufferSize(width, height)
+        surfaceTextures.forEach { it.setDefaultBufferSize(width, height) }
         postOrRun {
             GLES20.glViewport(0, 0, width, height)
         }
@@ -183,14 +242,14 @@ class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
     }
 
     private fun postOrRun(job: () -> Unit) {
-        if (!this::glThread.isInitialized) {
+        if (glThread == null) {
             Logger.w(TAG, "postOrRun: glThread not init")
             return
         }
         if (Thread.currentThread() == glThread) {
             job.invoke()
         } else {
-            glHandler.post(job)
+            glHandler?.post(job)
         }
     }
 }
