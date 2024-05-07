@@ -74,6 +74,17 @@
             android:text="camera_playback_to_glsurface"
             android:textSize="20sp" />
 
+        <TextView
+            android:id="@+id/camera_playback_to_glsurface2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="20dp"
+            android:background="@color/purple_200"
+            android:gravity="center"
+            android:text="camera_playback_to_glsurface2"
+            android:textSize="20sp" />
+
     </LinearLayout>
 
 </ScrollView>

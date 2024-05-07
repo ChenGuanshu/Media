@@ -30,9 +30,6 @@ private val verticesData = floatArrayOf(
 
 private const val TAG = "TwoOesTextureMixFilter"
 
-/**
- * 渲染texture
- */
 class TwoOesTextureMixFilter : BaseFilter(
     TwoOesTextureMixProgram.VERTEX_SHADER,
     TwoOesTextureMixProgram.FRAGMENT_SHADER,

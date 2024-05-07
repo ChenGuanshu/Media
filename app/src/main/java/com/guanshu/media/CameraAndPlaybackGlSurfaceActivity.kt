@@ -12,11 +12,14 @@ import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.analytics.AnalyticsListener
 import com.guanshu.media.application.GlobalDependency
 import com.guanshu.media.utils.Logger
+import com.guanshu.media.utils.VIDEO_PATH
 import com.guanshu.media.view.TwoSourceGlSurfaceView
 
 private const val TAG = "CameraAndPlaybackGlSurfaceActivity"
-private const val VIDEO_PATH = "/sdcard/DCIM/Camera/lv_0_20240122222838.mp4"
 
+/**
+ * Render with the GlSurfaceView: can't control the fps easily.
+ */
 class CameraAndPlaybackGlSurfaceActivity : ComponentActivity(), Player.Listener {
 
     private lateinit var surfaceView: TwoSourceGlSurfaceView

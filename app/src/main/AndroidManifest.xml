@@ -44,6 +44,7 @@
         <activity android:name=".PlaybackCustomGlSurfaceActivity" />
         <activity android:name=".PlaybackCustomGlTextureActivity" />
         <activity android:name=".CameraAndPlaybackGlSurfaceActivity" />
+        <activity android:name=".CameraAndPlaybackGlSurface2Activity" />
 
     </application>
 
