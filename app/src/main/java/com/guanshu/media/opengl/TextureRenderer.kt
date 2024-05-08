@@ -80,11 +80,16 @@ class TextureRender {
                     )
                 }
                 bindFbo(fbo, fboTextureData!!.textureId)
-
                 val filters = renderGraph.filtersMap[index]
-
                 GLES20.glViewport(0, 0, textureData.resolution.width, textureData.resolution.height)
-                filters?.forEach { it.render(listOf(textureData), textureData.resolution) }
+                filters?.forEach {
+
+                    // TODO it assumes there's only one filter
+                    // might need more texture for FBO
+
+                    it.render(listOf(textureData), textureData.resolution)
+
+                }
 
 //                if (testBitmap == null) {
 //                    testBitmap =

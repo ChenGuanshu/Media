@@ -35,7 +35,9 @@ class PlaybackCustomGlSurfaceActivity : ComponentActivity(), Player.Listener {
         val player = ExoPlayer.Builder(this.applicationContext).build()
         player.setMediaItem(MediaItem.fromUri(Uri.parse(VIDEO_PATH)))
         player.prepare()
-        player.repeatMode = ExoPlayer.REPEAT_MODE_ALL
+        // https://github.com/TheWidlarzGroup/react-native-video/issues/2767
+        // it's reported repeat_all causing OOM
+        player.repeatMode = ExoPlayer.REPEAT_MODE_OFF
         player.addListener(this)
         player.addAnalyticsListener(object : AnalyticsListener {
             override fun onVideoInputFormatChanged(
@@ -50,6 +52,15 @@ class PlaybackCustomGlSurfaceActivity : ComponentActivity(), Player.Listener {
                 if (size != surfaceView.getMediaResolution(0)) {
                     Logger.i(TAG, "input format=$format")
                     surfaceView.setMediaResolution(0, size)
+                }
+            }
+        })
+        player.addListener(object : Player.Listener {
+            override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+                super.onPlayerStateChanged(playWhenReady, playbackState)
+                if (playbackState == Player.STATE_ENDED) {
+                    player.seekTo(0)
+                    player.playWhenReady = true
                 }
             }
         })
