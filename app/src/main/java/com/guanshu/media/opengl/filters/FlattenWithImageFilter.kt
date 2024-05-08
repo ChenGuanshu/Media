@@ -202,7 +202,7 @@ class FlattenWithImageFilter : BaseFilter(
         GLES20.glUniform1i(sTextureHandle, 0)
 
         Matrix.setIdentityM(mvpMatrix, 0)
-        updateTransformMatrix(mvpMatrix, textureData.resolution, viewResolution)
+//        updateTransformMatrix(mvpMatrix, textureData.resolution, viewResolution)
 
         glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
         glUniformMatrix4fv(stMatrixHandle, 1, false, textureData.matrix, 0)

@@ -28,6 +28,8 @@ class PlaybackCustomGlSurfaceActivity : ComponentActivity(), Player.Listener {
         setContentView(R.layout.activity_playback_to_custom_glsurface)
         surfaceView = findViewById(R.id.glsurface_playback)
         surfaceView.renderGraph = RenderGraph(FilterConstants.FLATTEN_WITH_IMAGE)
+//        surfaceView.renderGraph =
+//            RenderGraph().apply { addOutputFilter(FilterConstants.TEXTURE_WITH_IMAGE) }
         surfaceView.init()
 
         val player = ExoPlayer.Builder(this.applicationContext).build()
@@ -64,8 +66,8 @@ class PlaybackCustomGlSurfaceActivity : ComponentActivity(), Player.Listener {
         Logger.i(TAG, "onResume")
         surfaceView.onSurfaceCreate = { surface ->
             surfaceView.post {
-                this.player?.setVideoSurface(surface.first())
-                this.player?.playWhenReady = true
+                player?.setVideoSurface(surface.first())
+                player?.playWhenReady = true
             }
         }
     }
@@ -73,12 +75,14 @@ class PlaybackCustomGlSurfaceActivity : ComponentActivity(), Player.Listener {
     override fun onPause() {
         super.onPause()
         Logger.i(TAG, "onPause")
-        this.player?.playWhenReady = false
-        this.player?.setVideoSurface(null)
+        player?.playWhenReady = false
+        player?.setVideoSurface(null)
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        player?.stop()
+        player?.release()
         surfaceView.release()
     }
 }

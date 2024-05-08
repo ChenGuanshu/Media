@@ -62,8 +62,8 @@ class PlaybackCustomGlTextureActivity : ComponentActivity(), Player.Listener {
         surfaceView.onSurfaceCreate = { surface ->
             surfaceView.post {
                 Logger.i(TAG, "onResume, setSurface:$surface")
-                this.player?.setVideoSurface(surface)
-                this.player?.playWhenReady = true
+                player?.setVideoSurface(surface)
+                player?.playWhenReady = true
             }
         }
     }
@@ -71,12 +71,14 @@ class PlaybackCustomGlTextureActivity : ComponentActivity(), Player.Listener {
     override fun onPause() {
         super.onPause()
         Logger.i(TAG, "onPause")
-        this.player?.playWhenReady = false
-        this.player?.setVideoSurface(null)
+        player?.playWhenReady = false
+        player?.setVideoSurface(null)
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        player?.stop()
+        player?.release()
         surfaceView.release()
     }
 }

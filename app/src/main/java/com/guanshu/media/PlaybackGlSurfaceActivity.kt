@@ -60,8 +60,8 @@ class PlaybackGlSurfaceActivity : ComponentActivity(), Player.Listener {
         Logger.i(TAG, "onResume")
         surfaceView.onSurfaceCreate = { surface ->
             surfaceView.post {
-                this.player?.setVideoSurface(surface)
-                this.player?.playWhenReady = true
+                player?.setVideoSurface(surface)
+                player?.playWhenReady = true
             }
         }
     }
@@ -69,7 +69,13 @@ class PlaybackGlSurfaceActivity : ComponentActivity(), Player.Listener {
     override fun onPause() {
         super.onPause()
         Logger.i(TAG, "onPause")
-        this.player?.playWhenReady = false
-        this.player?.setVideoSurface(null)
+        player?.playWhenReady = false
+        player?.setVideoSurface(null)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        player?.stop()
+        player?.release()
     }
 }

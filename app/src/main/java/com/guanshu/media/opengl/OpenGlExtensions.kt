@@ -111,6 +111,7 @@ fun newTexture(
     width: Int = -1,
     height: Int = -1,
 ) {
+    Logger.d(TAG, "newTexture, size=${textures.size}, type=$textureTarget, size=$width * $height")
     GLES20.glGenTextures(textures.size, textures, 0)
     textures.forEach { textureId ->
         GLES20.glBindTexture(textureTarget, textureId)

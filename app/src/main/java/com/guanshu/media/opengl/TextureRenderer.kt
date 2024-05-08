@@ -1,8 +1,13 @@
 package com.guanshu.media.opengl
 
+import android.graphics.Bitmap
+import android.opengl.GLES11Ext
+import android.opengl.GLES20
+import android.opengl.Matrix
 import android.util.Size
 import com.guanshu.media.opengl.filters.FilterConstants
 import com.guanshu.media.opengl.filters.RenderGraph
+import com.guanshu.media.opengl.filters.SingleImageTextureFilter
 import com.guanshu.media.opengl.filters.SingleTextureFilter
 import com.guanshu.media.opengl.filters.TwoOesTextureFilter2
 import com.guanshu.media.utils.Logger
@@ -12,8 +17,9 @@ private const val TAG = "TextureRender"
 
 class TextureData(
     val textureId: Int,
-    val matrix: FloatArray,
+    var matrix: FloatArray,
     var resolution: Size,
+    var textureType: Int = GLES11Ext.GL_TEXTURE_EXTERNAL_OES
 )
 
 class TextureRender {
@@ -25,6 +31,9 @@ class TextureRender {
         .apply { addFilter(FilterConstants.SINGLE_TEXTURE) }
 
     private val fbo by lazy { newFbo() }
+    private var fboTextureData: TextureData? = null
+
+    private var testBitmap: Bitmap? = null
 
     // TODO call before init
     fun addFilter(filterId: Int, index: Int = 0) =
@@ -55,34 +64,63 @@ class TextureRender {
 
         val nextTextureData = arrayListOf<TextureData>()
         if (renderGraph.filtersMap.values.isNotEmpty()) {
-//            bindFbo(fbo,)
-
             textureDatas.forEachIndexed { index, textureData ->
-                val filters = renderGraph.filtersMap[index]
-                var input = textureData
-                filters?.forEach {
-                    it.render(listOf(textureData), viewResolution)
+
+                if (fboTextureData == null) {
+                    val fboTexture = newTexture(
+                        GLES20.GL_TEXTURE_2D,
+                        textureData.resolution.width,
+                        textureData.resolution.height
+                    )
+                    fboTextureData = TextureData(
+                        fboTexture,
+                        textureData.matrix,
+                        textureData.resolution,
+                        GLES20.GL_TEXTURE_2D,
+                    )
                 }
+                bindFbo(fbo, fboTextureData!!.textureId)
+
+                val filters = renderGraph.filtersMap[index]
+
+                GLES20.glViewport(0, 0, textureData.resolution.width, textureData.resolution.height)
+                filters?.forEach { it.render(listOf(textureData), textureData.resolution) }
+
+//                if (testBitmap == null) {
+//                    testBitmap =
+//                        readToBitmap(textureData.resolution.width, textureData.resolution.height)
+//                    Logger.d(TAG, "read to bitmap")
+//                }
+
+                unbindFbo()
+                Matrix.setIdentityM(fboTextureData!!.matrix, 0)
+                nextTextureData.add(fboTextureData!!)
+
             }
 
-//            unbindFbo()
         } else {
             nextTextureData.addAll(textureDatas)
         }
 
+        GLES20.glViewport(0, 0, viewResolution.width, viewResolution.height)
         if (renderGraph.outputFilter != null) {
-            renderGraph.outputFilter!!.render(textureDatas, viewResolution)
-        } else if (textureDatas.size == 1) {
-            Logger.d(TAG, "drawFrame: lazy init single output filter")
-            renderGraph.outputFilter = SingleTextureFilter()
+            renderGraph.outputFilter!!.render(nextTextureData, viewResolution)
+        } else if (nextTextureData.size == 1) {
+            if (nextTextureData[0].textureType == GLES20.GL_TEXTURE_2D) {
+                renderGraph.outputFilter = SingleImageTextureFilter()
+            } else {
+                renderGraph.outputFilter = SingleTextureFilter()
+            }
             renderGraph.outputFilter!!.init()
-            renderGraph.outputFilter!!.render(textureDatas, viewResolution)
+            renderGraph.outputFilter!!.render(nextTextureData, viewResolution)
+            Logger.d(TAG, "drawFrame: lazy init ${renderGraph.outputFilter}")
         } else {
+            // TODO it should be image texture
             // TODO support multiple input
-            Logger.d(TAG, "drawFrame: lazy init multiple output filter")
             renderGraph.outputFilter = TwoOesTextureFilter2()
             renderGraph.outputFilter!!.init()
-            renderGraph.outputFilter!!.render(textureDatas, viewResolution)
+            renderGraph.outputFilter!!.render(nextTextureData, viewResolution)
+            Logger.d(TAG, "drawFrame: lazy init ${renderGraph.outputFilter}")
         }
 
         checkGlError("onDrawFrame end")
