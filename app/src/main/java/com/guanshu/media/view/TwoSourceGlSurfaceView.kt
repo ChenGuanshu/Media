@@ -6,12 +6,13 @@ import android.opengl.GLES20
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import android.util.AttributeSet
-import android.util.Log
 import android.util.Size
 import android.view.Surface
 import com.google.android.exoplayer2.util.GlUtil
 import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.TextureRender
+import com.guanshu.media.opengl.filters.FilterConstants
+import com.guanshu.media.opengl.filters.RenderGraph
 import com.guanshu.media.opengl.newTexture
 import com.guanshu.media.utils.DefaultSize
 import com.guanshu.media.utils.Logger
@@ -32,9 +33,11 @@ class TwoSourceGlSurfaceView : GLSurfaceView {
     private val textureDatas = arrayListOf<TextureData>()
     private val frameAvailables = hashMapOf<SurfaceTexture, AtomicBoolean>()
 
-    private val textureRender = TextureRender(6)
+    private val textureRender = TextureRender().apply {
+        addRenderGraph(RenderGraph().apply { addOutputFilter(FilterConstants.TWO_OES_TEXTURE_2) })
+    }
 
-    fun setMediaResolution(index:Int, size:Size){
+    fun setMediaResolution(index: Int, size: Size) {
         textureDatas[index].resolution = size
     }
 

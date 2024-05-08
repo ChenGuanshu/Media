@@ -9,12 +9,15 @@ import com.guanshu.media.opengl.FLOAT_SIZE_BYTES
 import com.guanshu.media.opengl.ImageTextureProgram
 import com.guanshu.media.opengl.OesTextureProgram
 import com.guanshu.media.opengl.TextureData
+import com.guanshu.media.opengl.bindFbo
 import com.guanshu.media.opengl.checkGlError
 import com.guanshu.media.opengl.createProgram
 import com.guanshu.media.opengl.getAtrribLocation
 import com.guanshu.media.opengl.getUniformLocation
+import com.guanshu.media.opengl.newFbo
 import com.guanshu.media.opengl.newTexture
 import com.guanshu.media.opengl.readToBitmap
+import com.guanshu.media.opengl.unbindFbo
 import com.guanshu.media.opengl.updateTransformMatrix
 import com.guanshu.media.utils.Logger
 import java.nio.ByteBuffer
@@ -83,7 +86,7 @@ class SingleTextureFboFilter : BaseFilter(
         // render from oes texture to fbo texture
         GLES20.glViewport(0, 0, textureData.resolution.width, textureData.resolution.height)
         maybeSetupFbo(textureData.resolution)
-        bindFbo()
+        bindFbo(fbo, fboTexture)
         GLES20.glClearColor(1.0f, 0.0f, 0.0f, 1.0f)
         GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT or GLES20.GL_COLOR_BUFFER_BIT)
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
@@ -94,7 +97,6 @@ class SingleTextureFboFilter : BaseFilter(
             // test code to validate the fbo
             testBitmap = readToBitmap(textureData.resolution.width, textureData.resolution.height)
         }
-
         unbindFbo()
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0)
 
@@ -158,28 +160,8 @@ class SingleTextureFboFilter : BaseFilter(
         if (fbo != -1) {
             return
         }
-        val texture = IntArray(1)
-        newTexture(texture, GLES20.GL_TEXTURE_2D, resolution.width, resolution.height)
-        fboTexture = texture[0]
-
-        val fbs = IntArray(1)
-        GLES20.glGenFramebuffers(1, fbs, 0)
-        fbo = fbs[0]
+        fboTexture = newTexture(GLES20.GL_TEXTURE_2D, resolution.width, resolution.height)
+        fbo = newFbo()
         Logger.d(TAG, "maybeSetupFbo fboTexture=$fboTexture, fbo=$fbo, res=$resolution")
-    }
-
-    private fun bindFbo() {
-        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, fbo)
-        GLES20.glFramebufferTexture2D(
-            GLES20.GL_FRAMEBUFFER,
-            GLES20.GL_COLOR_ATTACHMENT0,
-            GLES20.GL_TEXTURE_2D,
-            fboTexture,
-            0,
-        )
-    }
-
-    private fun unbindFbo() {
-        GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, GLES20.GL_NONE)
     }
 }

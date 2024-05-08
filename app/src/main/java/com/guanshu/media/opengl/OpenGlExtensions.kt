@@ -96,6 +96,16 @@ fun checkGlError(op: String) {
 }
 
 fun newTexture(
+    textureTarget: Int = GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
+    width: Int = -1,
+    height: Int = -1,
+): Int {
+    val textures = IntArray(1)
+    newTexture(textures, textureTarget, width, height)
+    return textures[0]
+}
+
+fun newTexture(
     textures: IntArray,
     textureTarget: Int = GLES11Ext.GL_TEXTURE_EXTERNAL_OES,
     width: Int = -1,
@@ -143,4 +153,25 @@ fun readToBitmap(width: Int, height: Int): Bitmap {
     val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
     bmp.copyPixelsFromBuffer(buf)
     return bmp
+}
+
+fun newFbo(): Int {
+    val fbo = IntArray(1)
+    GLES20.glGenFramebuffers(1, fbo, 0)
+    return fbo[0]
+}
+
+fun bindFbo(fbo: Int, texture: Int) {
+    GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, fbo)
+    GLES20.glFramebufferTexture2D(
+        GLES20.GL_FRAMEBUFFER,
+        GLES20.GL_COLOR_ATTACHMENT0,
+        GLES20.GL_TEXTURE_2D,
+        texture,
+        0,
+    )
+}
+
+fun unbindFbo() {
+    GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, GLES20.GL_NONE)
 }

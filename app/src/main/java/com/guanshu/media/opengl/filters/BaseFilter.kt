@@ -8,16 +8,24 @@ import com.guanshu.media.utils.Logger
 
 private const val TAG = "BaseFilter"
 
+interface Filter {
+    fun init()
+    fun render(
+        textureDatas: List<TextureData>,
+        viewResolution: Size,
+    )
+}
+
 abstract class BaseFilter(
     private val vertexShader: String,
     private val fragmentShader: String,
-) {
+) : Filter {
 
     private var init = false
 
     var program = 0
 
-    open fun init() {
+    override fun init() {
         if (init) return
         init = true
 
@@ -29,7 +37,7 @@ abstract class BaseFilter(
         }
     }
 
-    abstract fun render(
+    abstract override fun render(
         textureDatas: List<TextureData>,
         viewResolution: Size,
     )

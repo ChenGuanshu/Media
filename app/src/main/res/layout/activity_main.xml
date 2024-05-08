@@ -42,14 +42,14 @@
             android:textSize="20sp" />
 
         <TextView
-            android:id="@+id/playback_to_custom_glsurface"
+            android:id="@+id/camera_playback_to_glsurface"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_marginTop="20dp"
             android:background="@color/purple_200"
             android:gravity="center"
-            android:text="playback_to_custom_glsurface"
+            android:text="camera_playback_to_glsurface"
             android:textSize="20sp" />
 
         <TextView
@@ -64,14 +64,14 @@
             android:textSize="20sp" />
 
         <TextView
-            android:id="@+id/camera_playback_to_glsurface"
+            android:id="@+id/playback_to_custom_glsurface"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
             android:layout_marginTop="20dp"
             android:background="@color/purple_200"
             android:gravity="center"
-            android:text="camera_playback_to_glsurface"
+            android:text="playback_to_custom_glsurface"
             android:textSize="20sp" />
 
         <TextView
@@ -82,7 +82,7 @@
             android:layout_marginTop="20dp"
             android:background="@color/purple_200"
             android:gravity="center"
-            android:text="camera_playback_to_glsurface2"
+            android:text="camera_playback_to_custom_glsurface"
             android:textSize="20sp" />
 
     </LinearLayout>

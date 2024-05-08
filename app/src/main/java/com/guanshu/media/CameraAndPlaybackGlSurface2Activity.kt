@@ -11,6 +11,8 @@ import com.google.android.exoplayer2.PlaybackException
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.analytics.AnalyticsListener
 import com.guanshu.media.application.GlobalDependency
+import com.guanshu.media.opengl.filters.FilterConstants
+import com.guanshu.media.opengl.filters.RenderGraph
 import com.guanshu.media.utils.Logger
 import com.guanshu.media.utils.VIDEO_PATH
 import com.guanshu.media.view.OpenglSurfaceView
@@ -33,7 +35,7 @@ class CameraAndPlaybackGlSurface2Activity : ComponentActivity(), Player.Listener
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_camera_playback_to_glsurface2)
         surfaceView = findViewById(R.id.glsurface_camera_playback2)
-        surfaceView.filterId = 5
+        surfaceView.renderGraph = RenderGraph().apply { addOutputFilter(FilterConstants.TWO_OES_TEXTURE) }
         surfaceView.renderingMode = RenderingMode.RenderFixedRate(15)
         surfaceView.init(2)
 

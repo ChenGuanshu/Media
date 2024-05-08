@@ -10,6 +10,8 @@ import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.PlaybackException
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.analytics.AnalyticsListener
+import com.guanshu.media.opengl.filters.FilterConstants
+import com.guanshu.media.opengl.filters.RenderGraph
 import com.guanshu.media.utils.Logger
 import com.guanshu.media.utils.VIDEO_PATH
 import com.guanshu.media.view.OpenglSurfaceView
@@ -25,6 +27,7 @@ class PlaybackCustomGlSurfaceActivity : ComponentActivity(), Player.Listener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_playback_to_custom_glsurface)
         surfaceView = findViewById(R.id.glsurface_playback)
+        surfaceView.renderGraph = RenderGraph(FilterConstants.FLATTEN_WITH_IMAGE)
         surfaceView.init()
 
         val player = ExoPlayer.Builder(this.applicationContext).build()
