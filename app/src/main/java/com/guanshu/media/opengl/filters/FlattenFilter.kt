@@ -138,7 +138,7 @@ class FlattenFilter : BaseFilter(
 
         glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
         glClear(GL_DEPTH_BUFFER_BIT or GL_COLOR_BUFFER_BIT)
-        glUseProgram(program)
+        program.use()
         checkGlError("glUseProgram")
         glActiveTexture(GL_TEXTURE0)
         glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureData.textureId)

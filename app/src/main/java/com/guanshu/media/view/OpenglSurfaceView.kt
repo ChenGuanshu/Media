@@ -14,6 +14,8 @@ import android.view.SurfaceView
 import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.TextureRender
 import com.guanshu.media.opengl.egl.EglManager
+import com.guanshu.media.opengl.filters.FilterConstants
+import com.guanshu.media.opengl.filters.RenderGraph
 import com.guanshu.media.opengl.newTexture
 import com.guanshu.media.utils.DefaultSize
 import com.guanshu.media.utils.Logger
@@ -44,9 +46,12 @@ class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
     private val surfaces = arrayListOf<Surface>()
     private val textureDatas = arrayListOf<TextureData>()
     private val frameAvailables = hashMapOf<SurfaceTexture, AtomicBoolean>()
-
     private lateinit var textureRender: TextureRender
-    var filterId = 8
+
+    private var error = false
+
+    var renderGraph = RenderGraph().apply { addFilter(FilterConstants.SINGLE_TEXTURE) }
+
     var renderingMode: RenderingMode = RenderingMode.RenderWhenDirty
         set(value) {
             maybeScheduleRender()
@@ -115,7 +120,7 @@ class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
 
             onSurfaceCreate?.invoke(surfaces)
 
-            textureRender = TextureRender(filterId)
+            textureRender = TextureRender().apply { addRenderGraph(renderGraph) }
             textureRender.init()
 
             maybeScheduleRender()
@@ -180,12 +185,20 @@ class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
             }
 
             // render dirty or not
-            textureRender.drawFrame(
-                textureDatas,
-                viewResolution,
-            )
+            if (error) {
+                return@postOrRun
+            }
 
-            egl.swapBuffer()
+            try {
+                textureRender.drawFrame(
+                    textureDatas,
+                    viewResolution,
+                )
+                egl.swapBuffer()
+            } catch (e: Exception) {
+                error = true
+                Logger.e(TAG, "draw error", e)
+            }
 
             maybeScheduleRender()
         }

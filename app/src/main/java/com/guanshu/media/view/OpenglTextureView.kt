@@ -14,6 +14,7 @@ import android.view.TextureView
 import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.TextureRender
 import com.guanshu.media.opengl.egl.EglManager
+import com.guanshu.media.opengl.filters.FilterConstants
 import com.guanshu.media.opengl.newTexture
 import com.guanshu.media.utils.DefaultSize
 import com.guanshu.media.utils.Logger
@@ -35,7 +36,7 @@ class OpenglTextureView : TextureView {
     private var textureData: TextureData? = null
 
     private val frameAvailable = AtomicBoolean(false)
-    private val textureRender = TextureRender(1)
+    private val textureRender = TextureRender().apply { FilterConstants.SINGLE_TEXTURE }
 
     var onSurfaceCreate: ((Surface) -> Unit)? = null
         set(value) {
@@ -162,7 +163,7 @@ class OpenglTextureView : TextureView {
 //            GLES20.glClearColor(1f, 0f, 0f, 0f)
 //            GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT)
 
-            // TODO FIXFIXIIIXIXIXIXIXIFIFIX
+            // TODO FIX(texture view一直黑屏)
             textureRender.drawFrame(
                 listOf(textureData!!),
                 viewResolution,

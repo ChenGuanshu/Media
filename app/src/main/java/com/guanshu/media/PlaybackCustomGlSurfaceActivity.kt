@@ -10,6 +10,8 @@ import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.PlaybackException
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.analytics.AnalyticsListener
+import com.guanshu.media.opengl.filters.FilterConstants
+import com.guanshu.media.opengl.filters.RenderGraph
 import com.guanshu.media.utils.Logger
 import com.guanshu.media.utils.VIDEO_PATH
 import com.guanshu.media.view.OpenglSurfaceView
@@ -25,12 +27,17 @@ class PlaybackCustomGlSurfaceActivity : ComponentActivity(), Player.Listener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_playback_to_custom_glsurface)
         surfaceView = findViewById(R.id.glsurface_playback)
+        surfaceView.renderGraph = RenderGraph(FilterConstants.FLATTEN_WITH_IMAGE)
+//        surfaceView.renderGraph =
+//            RenderGraph().apply { addOutputFilter(FilterConstants.TEXTURE_WITH_IMAGE) }
         surfaceView.init()
 
         val player = ExoPlayer.Builder(this.applicationContext).build()
         player.setMediaItem(MediaItem.fromUri(Uri.parse(VIDEO_PATH)))
         player.prepare()
-        player.repeatMode = ExoPlayer.REPEAT_MODE_ALL
+        // https://github.com/TheWidlarzGroup/react-native-video/issues/2767
+        // it's reported repeat_all causing OOM
+        player.repeatMode = ExoPlayer.REPEAT_MODE_OFF
         player.addListener(this)
         player.addAnalyticsListener(object : AnalyticsListener {
             override fun onVideoInputFormatChanged(
@@ -48,6 +55,15 @@ class PlaybackCustomGlSurfaceActivity : ComponentActivity(), Player.Listener {
                 }
             }
         })
+        player.addListener(object : Player.Listener {
+            override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+                super.onPlayerStateChanged(playWhenReady, playbackState)
+                if (playbackState == Player.STATE_ENDED) {
+                    player.seekTo(0)
+                    player.playWhenReady = true
+                }
+            }
+        })
 
         this.player = player
     }
@@ -61,8 +77,8 @@ class PlaybackCustomGlSurfaceActivity : ComponentActivity(), Player.Listener {
         Logger.i(TAG, "onResume")
         surfaceView.onSurfaceCreate = { surface ->
             surfaceView.post {
-                this.player?.setVideoSurface(surface.first())
-                this.player?.playWhenReady = true
+                player?.setVideoSurface(surface.first())
+                player?.playWhenReady = true
             }
         }
     }
@@ -70,12 +86,14 @@ class PlaybackCustomGlSurfaceActivity : ComponentActivity(), Player.Listener {
     override fun onPause() {
         super.onPause()
         Logger.i(TAG, "onPause")
-        this.player?.playWhenReady = false
-        this.player?.setVideoSurface(null)
+        player?.playWhenReady = false
+        player?.setVideoSurface(null)
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        player?.stop()
+        player?.release()
         surfaceView.release()
     }
 }

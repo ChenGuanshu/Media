@@ -12,6 +12,7 @@ import android.view.Surface
 import com.google.android.exoplayer2.util.GlUtil
 import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.TextureRender
+import com.guanshu.media.opengl.filters.FilterConstants
 import com.guanshu.media.opengl.newTexture
 import com.guanshu.media.utils.DefaultSize
 import com.guanshu.media.utils.Logger
@@ -32,7 +33,7 @@ class SingleSourceGlSurfaceView : GLSurfaceView {
     private var textureData: TextureData? = null
 
     private val frameAvailable = AtomicBoolean(false)
-    private val textureRender = TextureRender(4)
+    private val textureRender = TextureRender().apply { addFilter(FilterConstants.SINGLE_TEXTURE) }
 
     var onSurfaceCreate: ((Surface) -> Unit)? = null
         set(value) {
@@ -98,6 +99,10 @@ class SingleSourceGlSurfaceView : GLSurfaceView {
                  */
             }
 
+            if (textureData?.resolution == DefaultSize) {
+                Log.d(TAG, "drop rendering for invalid resolution")
+                return
+            }
             textureRender.drawFrame(
                 listOf(textureData!!),
                 viewResolution,
