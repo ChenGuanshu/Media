@@ -130,7 +130,7 @@ class TextureWithImageFilter : BaseFilter(
         textureData: TextureData,
         viewResolution: Size,
     ) {
-        GLES20.glUseProgram(program)
+        program.use()
         checkGlError("glUseProgram")
 
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)

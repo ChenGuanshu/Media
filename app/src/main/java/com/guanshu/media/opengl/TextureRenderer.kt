@@ -80,8 +80,12 @@ class TextureRender {
                     )
                 }
                 bindFbo(fbo, fboTextureData!!.textureId)
+                checkGlError("onDrawFrame: bindFbo")
+
                 val filters = renderGraph.filtersMap[index]
                 GLES20.glViewport(0, 0, textureData.resolution.width, textureData.resolution.height)
+                checkGlError("onDrawFrame: glViewport:${textureData.resolution}")
+
                 filters?.forEach {
 
                     // TODO it assumes there's only one filter

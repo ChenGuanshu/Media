@@ -8,8 +8,8 @@ class RenderGraph() {
         addFilter(filterId)
     }
 
-    val filtersMap = hashMapOf<Int, ArrayList<Filter>>()
-    var outputFilter: Filter? = null
+    val filtersMap = hashMapOf<Int, ArrayList<RenderPass>>()
+    var outputFilter: RenderPass? = null
 
     fun addFilter(filterId: Int, index: Int = 0) {
         val filters = filtersMap.getOrPut(index) { arrayListOf() }

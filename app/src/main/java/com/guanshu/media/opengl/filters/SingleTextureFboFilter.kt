@@ -9,11 +9,9 @@ import com.guanshu.media.opengl.FLOAT_SIZE_BYTES
 import com.guanshu.media.opengl.ImageTextureProgram
 import com.guanshu.media.opengl.OesTextureProgram
 import com.guanshu.media.opengl.TextureData
+import com.guanshu.media.opengl.abstraction.Program
 import com.guanshu.media.opengl.bindFbo
 import com.guanshu.media.opengl.checkGlError
-import com.guanshu.media.opengl.createProgram
-import com.guanshu.media.opengl.getAtrribLocation
-import com.guanshu.media.opengl.getUniformLocation
 import com.guanshu.media.opengl.newFbo
 import com.guanshu.media.opengl.newTexture
 import com.guanshu.media.opengl.readToBitmap
@@ -42,7 +40,7 @@ class SingleTextureFboFilter : BaseFilter(
     OesTextureProgram.FRAGMENT_SHADER,
 ) {
 
-    private var imageProgram = -1
+    private lateinit var imageProgram: Program
     private val vertexVbos = IntArray(1)
     private val mvpMatrix = FloatArray(16)
     private val textMatrix = FloatArray(16)
@@ -57,7 +55,7 @@ class SingleTextureFboFilter : BaseFilter(
         Logger.i(TAG, "call init")
 
         imageProgram =
-            createProgram(ImageTextureProgram.VERTEX_SHADER, ImageTextureProgram.FRAGMENT_SHADER)
+            Program(ImageTextureProgram.VERTEX_SHADER, ImageTextureProgram.FRAGMENT_SHADER)
 
         val vertices = ByteBuffer.allocateDirect(verticesData.size * FLOAT_SIZE_BYTES)
             .order(ByteOrder.nativeOrder())
@@ -117,11 +115,11 @@ class SingleTextureFboFilter : BaseFilter(
     }
 
     private fun render(
-        program: Int,
+        program: Program,
         mvpTransform: FloatArray,
         textureTransform: FloatArray,
     ) {
-        GLES20.glUseProgram(program)
+        program.use()
 
         val aPositionHandle = program.getAtrribLocation("aPosition")
         val mvpMatrixHandle = program.getUniformLocation("uMVPMatrix")

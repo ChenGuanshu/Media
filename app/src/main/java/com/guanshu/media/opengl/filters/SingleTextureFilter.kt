@@ -7,13 +7,11 @@ import android.util.Size
 import com.guanshu.media.opengl.FLOAT_SIZE_BYTES
 import com.guanshu.media.opengl.OesTextureProgram
 import com.guanshu.media.opengl.TextureData
+import com.guanshu.media.opengl.abstraction.VertexBuffer
 import com.guanshu.media.opengl.checkGlError
-import com.guanshu.media.opengl.getAtrribLocation
-import com.guanshu.media.opengl.getUniformLocation
+import com.guanshu.media.opengl.program.ExternalTextureProgram
 import com.guanshu.media.opengl.updateTransformMatrix
 import com.guanshu.media.utils.Logger
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 
 // 顶点坐标和纹理坐标
 private val verticesData = floatArrayOf(
@@ -29,18 +27,14 @@ private const val TAG = "SingleTextureFilter"
 /**
  * 渲染texture
  */
-class SingleTextureFilter : BaseFilter(
-    OesTextureProgram.VERTEX_SHADER,
-    OesTextureProgram.FRAGMENT_SHADER,
-) {
+class SingleTextureFilter : BaseFilter(ExternalTextureProgram()) {
 
-    private val vertexVbos = IntArray(1)
+    private lateinit var vertexBuffer: VertexBuffer
     private val mvpMatrix = FloatArray(16)
     private var mvpMatrixHandle = 0
     private var stMatrixHandle = 0
     private var aPositionHandle = 0
     private var aTextureHandle = 0
-
 
     override fun init() {
         super.init()
@@ -50,22 +44,10 @@ class SingleTextureFilter : BaseFilter(
         aTextureHandle = program.getAtrribLocation("aTextureCoord")
         stMatrixHandle = program.getUniformLocation("uSTMatrix")
 
-        val vertices = ByteBuffer.allocateDirect(verticesData.size * FLOAT_SIZE_BYTES)
-            .order(ByteOrder.nativeOrder())
-            .asFloatBuffer()
-        vertices.put(verticesData).position(0)
-
-        GLES20.glGenBuffers(1, vertexVbos, 0)
-        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vertexVbos[0])
-        GLES20.glBufferData(
-            GLES20.GL_ARRAY_BUFFER,
-            verticesData.size * FLOAT_SIZE_BYTES,
-            vertices,
-            GLES20.GL_STATIC_DRAW
-        )
-
-//        数据传输完就解绑
-        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
+        vertexBuffer = VertexBuffer()
+        vertexBuffer.addBuffer(verticesData)
+        vertexBuffer.unbind()
+        checkGlError("vertexBuffer")
     }
 
     override fun render(
@@ -74,15 +56,19 @@ class SingleTextureFilter : BaseFilter(
     ) {
         val textureData = textureDatas.first()
 
+        checkGlError("before glClearColor")
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
         GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT or GLES20.GL_COLOR_BUFFER_BIT)
 
-        GLES20.glUseProgram(program)
-        checkGlError("glUseProgram")
+        checkGlError("before glUseProgram")
+        program.use()
+        checkGlError("after glUseProgram")
+
         GLES20.glActiveTexture(GLES20.GL_TEXTURE0)
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureData.textureId)
 
-        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vertexVbos[0])
+        vertexBuffer.bind()
+
         GLES20.glVertexAttribPointer(
             aPositionHandle,
             3,
@@ -117,6 +103,6 @@ class SingleTextureFilter : BaseFilter(
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         checkGlError("glDrawArrays")
 
-        GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, 0)
+        vertexBuffer.unbind()
     }
 }

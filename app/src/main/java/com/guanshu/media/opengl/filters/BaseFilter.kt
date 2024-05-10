@@ -1,40 +1,24 @@
 package com.guanshu.media.opengl.filters
 
-import android.opengl.GLES20
 import android.util.Size
 import com.guanshu.media.opengl.TextureData
-import com.guanshu.media.opengl.createProgram
-import com.guanshu.media.utils.Logger
+import com.guanshu.media.opengl.abstraction.Program
+import com.guanshu.media.opengl.checkGlError
 
 private const val TAG = "BaseFilter"
 
-interface Filter {
-    fun init()
-    fun render(
-        textureDatas: List<TextureData>,
-        viewResolution: Size,
-    )
-}
-
 abstract class BaseFilter(
-    private val vertexShader: String,
-    private val fragmentShader: String,
-) : Filter {
+    val program: Program
+) : RenderPass {
 
-    private var init = false
-
-    var program = 0
+    constructor(
+        vertexShader: String,
+        fragmentShader: String
+    ) : this(Program(vertexShader, fragmentShader))
 
     override fun init() {
-        if (init) return
-        init = true
-
-        Logger.d(TAG, "init")
-        program = createProgram(vertexShader, fragmentShader)
-        if (program == 0) {
-            val str = GLES20.glGetProgramInfoLog(program)
-            throw RuntimeException("failed creating program:$str")
-        }
+        program.init()
+        checkGlError("BaseFilter:init")
     }
 
     abstract override fun render(
