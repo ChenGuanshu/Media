@@ -121,9 +121,9 @@ class SingleTextureFboFilter : BaseFilter(
     ) {
         program.use()
 
-        val aPositionHandle = program.getAtrribLocation("aPosition")
+        val aPositionHandle = program.getAttribLocation("aPosition")
         val mvpMatrixHandle = program.getUniformLocation("uMVPMatrix")
-        val aTextureHandle = program.getAtrribLocation("aTextureCoord")
+        val aTextureHandle = program.getAttribLocation("aTextureCoord")
         val stMatrixHandle = program.getUniformLocation("uSTMatrix")
 
         GLES20.glBindBuffer(GLES20.GL_ARRAY_BUFFER, vertexVbos[0])

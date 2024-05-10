@@ -8,8 +8,6 @@ import com.guanshu.media.opengl.FLOAT_SIZE_BYTES
 import com.guanshu.media.opengl.OesTextureProgram
 import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.checkGlError
-import com.guanshu.media.opengl.getAtrribLocation
-import com.guanshu.media.opengl.getUniformLocation
 import com.guanshu.media.opengl.updateTransformMatrix
 import com.guanshu.media.utils.Logger
 import java.nio.ByteBuffer
@@ -50,9 +48,9 @@ class TwoOesTextureFilter : BaseFilter(
     override fun init() {
         super.init()
         Logger.i(TAG, "call init")
-        aPositionHandle = program.getAtrribLocation("aPosition")
+        aPositionHandle = program.getAttribLocation("aPosition")
         mvpMatrixHandle = program.getUniformLocation("uMVPMatrix")
-        aTextureHandle = program.getAtrribLocation("aTextureCoord")
+        aTextureHandle = program.getAttribLocation("aTextureCoord")
         stMatrixHandle = program.getUniformLocation("uSTMatrix")
         sTextureHandle = program.getUniformLocation("sTexture")
 

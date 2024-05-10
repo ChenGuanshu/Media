@@ -68,7 +68,7 @@ fun createProgram(vertexSource: String, fragmentSource: String): Int {
 }
 
 // this = program id
-fun Int.getAtrribLocation(name: String): Int {
+fun Int.getAttribLocation(name: String): Int {
     val ret = GLES20.glGetAttribLocation(this, name)
     checkGlError("glGetAttribLocation $name")
     if (ret == -1) {

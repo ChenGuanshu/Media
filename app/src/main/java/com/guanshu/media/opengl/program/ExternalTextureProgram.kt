@@ -38,8 +38,9 @@ class ExternalTextureProgram : Program(
     FRAGMENT_SHADER,
 ) {
 
-    val aPositionHandle by lazy { getAtrribLocation("aPosition") }
-    val mvpMatrixHandle by lazy { getUniformLocation("uMVPMatrix") }
-    val aTextureHandle by lazy { getAtrribLocation("aTextureCoord") }
-    val stMatrixHandle by lazy { getUniformLocation("uSTMatrix") }
+    val aPositionHandle by lazy { getAttrib("aPosition") }
+    val mvpMatrixHandle by lazy { getUniform("uMVPMatrix") }
+    val aTextureHandle by lazy { getAttrib("aTextureCoord") }
+    val stMatrixHandle by lazy { getUniform("uSTMatrix") }
+
 }

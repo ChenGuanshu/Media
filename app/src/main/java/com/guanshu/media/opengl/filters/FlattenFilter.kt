@@ -9,7 +9,6 @@ import android.opengl.GLES20.GL_FLOAT
 import android.opengl.GLES20.GL_STATIC_DRAW
 import android.opengl.GLES20.GL_TEXTURE0
 import android.opengl.GLES20.GL_TRIANGLES
-import android.opengl.GLES20.GL_TRIANGLE_STRIP
 import android.opengl.GLES20.GL_UNSIGNED_INT
 import android.opengl.GLES20.glActiveTexture
 import android.opengl.GLES20.glBindBuffer
@@ -17,12 +16,10 @@ import android.opengl.GLES20.glBindTexture
 import android.opengl.GLES20.glBufferData
 import android.opengl.GLES20.glClear
 import android.opengl.GLES20.glClearColor
-import android.opengl.GLES20.glDrawArrays
 import android.opengl.GLES20.glDrawElements
 import android.opengl.GLES20.glEnableVertexAttribArray
 import android.opengl.GLES20.glGenBuffers
 import android.opengl.GLES20.glUniformMatrix4fv
-import android.opengl.GLES20.glUseProgram
 import android.opengl.GLES20.glVertexAttribPointer
 import android.opengl.Matrix
 import android.util.Size
@@ -31,10 +28,7 @@ import com.guanshu.media.opengl.INT_SIZE_BYTES
 import com.guanshu.media.opengl.OesTextureProgram
 import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.checkGlError
-import com.guanshu.media.opengl.getAtrribLocation
-import com.guanshu.media.opengl.getUniformLocation
 import com.guanshu.media.opengl.updateTransformMatrix
-import com.guanshu.media.utils.DefaultSize
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.nio.IntBuffer
@@ -93,9 +87,9 @@ class FlattenFilter : BaseFilter(
         super.init()
         // 纹理坐标
 
-        aPositionHandle = program.getAtrribLocation("aPosition")
+        aPositionHandle = program.getAttribLocation("aPosition")
         mvpMatrixHandle = program.getUniformLocation("uMVPMatrix")
-        aTextureHandle = program.getAtrribLocation("aTextureCoord")
+        aTextureHandle = program.getAttribLocation("aTextureCoord")
         stMatrixHandle = program.getUniformLocation("uSTMatrix")
 
         val vertexBuffer = ByteBuffer.allocateDirect(vertexCoord.size * FLOAT_SIZE_BYTES)

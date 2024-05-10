@@ -14,13 +14,19 @@ import com.guanshu.media.utils.Logger
 
 private const val TAG = "TextureRender"
 
-
 class TextureData(
     val textureId: Int,
     var matrix: FloatArray,
     var resolution: Size,
     var textureType: Int = GLES11Ext.GL_TEXTURE_EXTERNAL_OES
-)
+) {
+    fun bind(slot: Int = 0) {
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0 + slot)
+        GLES20.glBindTexture(textureType, textureId)
+    }
+
+    fun unbind() = GLES20.glBindTexture(textureType, 0)
+}
 
 class TextureRender {
 
