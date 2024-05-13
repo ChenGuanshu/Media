@@ -167,6 +167,7 @@ fun bindFbo(fbo: Int, texture: Int) {
     GLES20.glFramebufferTexture2D(
         GLES20.GL_FRAMEBUFFER,
         GLES20.GL_COLOR_ATTACHMENT0,
+        // TODO
         GLES20.GL_TEXTURE_2D,
         texture,
         0,

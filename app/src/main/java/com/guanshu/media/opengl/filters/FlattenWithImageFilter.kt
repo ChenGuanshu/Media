@@ -79,8 +79,8 @@ private val imageVertexCoord = floatArrayOf(
 private const val TAG = "FlattenWithImageFilter"
 
 class FlattenWithImageFilter : BaseFilter(
-    OesTextureProgram.VERTEX_SHADER,
-    OesTextureProgram.FRAGMENT_SHADER,
+    ImageTextureProgram.VERTEX_SHADER,
+    ImageTextureProgram.FRAGMENT_SHADER,
 ) {
 
     private val mvpMatrix = FloatArray(16)
@@ -196,7 +196,7 @@ class FlattenWithImageFilter : BaseFilter(
 
         val sTextureHandle = bitmapProgram.getUniformLocation("sTexture")
         glActiveTexture(GL_TEXTURE0)
-        glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureData.textureId)
+        glBindTexture(textureData.textureType, textureData.textureId)
         GLES20.glUniform1i(sTextureHandle, 0)
 
         Matrix.setIdentityM(mvpMatrix, 0)

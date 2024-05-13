@@ -4,6 +4,7 @@ import android.graphics.Bitmap
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.opengl.Matrix
+import android.util.Log
 import android.util.Size
 import com.guanshu.media.opengl.filters.FilterConstants
 import com.guanshu.media.opengl.filters.RenderGraph
@@ -26,96 +27,108 @@ class TextureData(
     }
 
     fun unbind() = GLES20.glBindTexture(textureType, 0)
+
+    override fun toString(): String {
+        return "{id=$textureId, resolution=$resolution, type=$textureType}"
+    }
 }
 
-class TextureRender {
-
-    var init = false
-        private set
-
-    private var renderGraph: RenderGraph = RenderGraph()
-        .apply { addFilter(FilterConstants.SINGLE_TEXTURE) }
+class TextureRender(renderGraph: RenderGraph) : Renderer(renderGraph) {
 
     private val fbo by lazy { newFbo() }
-    private var fboTextureData: TextureData? = null
-
+    private val fboTextures = ArrayList<TextureData>()
     private var testBitmap: Bitmap? = null
 
-    // TODO call before init
-    fun addFilter(filterId: Int, index: Int = 0) =
-        run { renderGraph = RenderGraph().apply { addFilter(filterId, index) } }
+    private fun acquireFboTexture(resolution: Size): TextureData {
+        val iterator = fboTextures.iterator()
+        while (iterator.hasNext()) {
+            val texture = iterator.next()
+            if (texture.resolution == resolution) {
+                iterator.remove()
+//                Logger.v(TAG,"get cache $texture, $resolution")
+                return texture
+            }
+        }
 
-    fun addRenderGraph(renderGraph: RenderGraph) = run { this.renderGraph = renderGraph }
-
-    /**
-     * Initializes GL state.  Call this after the EGL surface has been created and made current.
-     */
-    fun init() {
-        if (init) return
-        init = true
-        Logger.i(TAG, "init $this")
-
-        renderGraph.filtersMap.values.forEach { it.forEach { it.init() } }
-        renderGraph.outputFilter?.init()
-
-        Logger.i(TAG, "init filters=${renderGraph.filtersMap}")
-        Logger.i(TAG, "init mergingFilter=${renderGraph.outputFilter}")
+        val texture = newTexture(
+            GLES20.GL_TEXTURE_2D,
+            resolution.width,
+            resolution.height
+        )
+//        Logger.v(TAG,"new $texture, $resolution")
+        val floatArray = FloatArray(16)
+        Matrix.setIdentityM(floatArray, 0)
+        return TextureData(
+            texture,
+            floatArray,
+            resolution,
+            GLES20.GL_TEXTURE_2D,
+        )
     }
 
-    fun drawFrame(
+    private fun returnFboTexture(textureData: TextureData) {
+        if (textureData.textureType == GLES20.GL_TEXTURE_2D) {
+//            Logger.v(TAG,"return to cache $textureData")
+            fboTextures.add(textureData)
+        }
+    }
+
+    override fun drawFrame(
         textureDatas: List<TextureData>,
         viewResolution: Size,
     ) {
         checkGlError("onDrawFrame start")
 
+//        Logger.v(TAG,"draw")
+
         val nextTextureData = arrayListOf<TextureData>()
         if (renderGraph.filtersMap.values.isNotEmpty()) {
             textureDatas.forEachIndexed { index, textureData ->
-
-                if (fboTextureData == null) {
-                    val fboTexture = newTexture(
-                        GLES20.GL_TEXTURE_2D,
-                        textureData.resolution.width,
-                        textureData.resolution.height
-                    )
-                    fboTextureData = TextureData(
-                        fboTexture,
-                        textureData.matrix,
-                        textureData.resolution,
-                        GLES20.GL_TEXTURE_2D,
-                    )
-                }
-                bindFbo(fbo, fboTextureData!!.textureId)
-                checkGlError("onDrawFrame: bindFbo")
-
                 val filters = renderGraph.filtersMap[index]
                 GLES20.glViewport(0, 0, textureData.resolution.width, textureData.resolution.height)
                 checkGlError("onDrawFrame: glViewport:${textureData.resolution}")
 
-                filters?.forEach {
 
-                    // TODO it assumes there's only one filter
-                    // might need more texture for FBO
+                var input = textureData
+                var output = acquireFboTexture(textureData.resolution)
+                bindFbo(fbo, output.textureId)
+                checkGlError("onDrawFrame: bindFbo")
 
-                    it.render(listOf(textureData), textureData.resolution)
+                // assume there's N filters
+                // the rendering process will be
+                // input -> fbo+texture1
+                // texture 1 -> fbo+texture2
+                // texture 2 -> fbo+texture1
+                // ..
+                // texture 1 or 2 -> surface
+                filters?.forEachIndexed { filterIndex, filter ->
 
+//                    Logger.v(TAG,"draw from $input, to $output")
+                    filter.render(listOf(input), input.resolution)
+
+                    checkGlError("onDrawFrame: render $filterIndex, $filter")
+
+                    returnFboTexture(input)
+                    if (filterIndex != filters.lastIndex) {
+                        input = output
+                        output = acquireFboTexture(input.resolution)
+
+                        unbindFbo()
+                        bindFbo(fbo, output.textureId)
+                    }
                 }
 
-//                if (testBitmap == null) {
-//                    testBitmap =
-//                        readToBitmap(textureData.resolution.width, textureData.resolution.height)
-//                    Logger.d(TAG, "read to bitmap")
-//                }
-
                 unbindFbo()
-                Matrix.setIdentityM(fboTextureData!!.matrix, 0)
-                nextTextureData.add(fboTextureData!!)
+                Matrix.setIdentityM(output.matrix, 0)
+                nextTextureData.add(output)
 
             }
 
         } else {
             nextTextureData.addAll(textureDatas)
         }
+
+//        Logger.v(TAG,"draw from $nextTextureData to surface")
 
         GLES20.glViewport(0, 0, viewResolution.width, viewResolution.height)
         if (renderGraph.outputFilter != null) {
@@ -137,7 +150,9 @@ class TextureRender {
             renderGraph.outputFilter!!.render(nextTextureData, viewResolution)
             Logger.d(TAG, "drawFrame: lazy init ${renderGraph.outputFilter}")
         }
+        nextTextureData.forEach { returnFboTexture(it) }
 
+        GLES20.glFlush()
         checkGlError("onDrawFrame end")
     }
 }

@@ -27,7 +27,12 @@ class PlaybackCustomGlSurfaceActivity : ComponentActivity(), Player.Listener {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_playback_to_custom_glsurface)
         surfaceView = findViewById(R.id.glsurface_playback)
-        surfaceView.renderGraph = RenderGraph(FilterConstants.FLATTEN_WITH_IMAGE)
+        surfaceView.renderGraph = RenderGraph()
+            .apply {
+                addFilter(FilterConstants.SINGLE_TEXTURE)
+                addFilter(FilterConstants.FLATTEN_WITH_IMAGE)
+                addFilter(FilterConstants.FLATTEN_WITH_IMAGE)
+            }
 //        surfaceView.renderGraph =
 //            RenderGraph().apply { addOutputFilter(FilterConstants.TEXTURE_WITH_IMAGE) }
         surfaceView.init()
