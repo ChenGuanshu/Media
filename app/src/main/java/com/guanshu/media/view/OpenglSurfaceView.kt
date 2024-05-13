@@ -11,9 +11,11 @@ import android.util.Size
 import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
+import com.guanshu.media.opengl.Renderer
+import com.guanshu.media.opengl.RendererFactory
 import com.guanshu.media.opengl.TextureData
-import com.guanshu.media.opengl.TextureRender
 import com.guanshu.media.opengl.egl.EglManager
+import com.guanshu.media.opengl.filters.DefaultRenderGraph
 import com.guanshu.media.opengl.filters.FilterConstants
 import com.guanshu.media.opengl.filters.RenderGraph
 import com.guanshu.media.opengl.newTexture
@@ -46,11 +48,11 @@ class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
     private val surfaces = arrayListOf<Surface>()
     private val textureDatas = arrayListOf<TextureData>()
     private val frameAvailables = hashMapOf<SurfaceTexture, AtomicBoolean>()
-    private lateinit var textureRender: TextureRender
+    private lateinit var textureRender: Renderer
 
     private var error = false
 
-    var renderGraph = RenderGraph().apply { addFilter(FilterConstants.SINGLE_TEXTURE) }
+    var renderGraph = DefaultRenderGraph
 
     var renderingMode: RenderingMode = RenderingMode.RenderWhenDirty
         set(value) {
@@ -120,7 +122,7 @@ class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
 
             onSurfaceCreate?.invoke(surfaces)
 
-            textureRender = TextureRender().apply { addRenderGraph(renderGraph) }
+            textureRender = RendererFactory.createRenderer(renderGraph)
             textureRender.init()
 
             maybeScheduleRender()

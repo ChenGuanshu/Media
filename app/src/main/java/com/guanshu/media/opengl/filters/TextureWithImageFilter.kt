@@ -6,7 +6,6 @@ import android.opengl.GLES11Ext
 import android.opengl.GLES20
 import android.opengl.GLUtils
 import android.opengl.Matrix
-import android.util.Log
 import android.util.Size
 import com.guanshu.media.opengl.FLOAT_SIZE_BYTES
 import com.guanshu.media.opengl.ImageTextureProgram
@@ -14,11 +13,10 @@ import com.guanshu.media.opengl.OesTextureProgram
 import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.checkGlError
 import com.guanshu.media.opengl.createProgram
-import com.guanshu.media.opengl.getAtrribLocation
+import com.guanshu.media.opengl.getAttribLocation
 import com.guanshu.media.opengl.getUniformLocation
 import com.guanshu.media.opengl.newTexture
 import com.guanshu.media.opengl.updateTransformMatrix
-import com.guanshu.media.utils.DefaultSize
 import com.guanshu.media.utils.Logger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -73,9 +71,9 @@ class TextureWithImageFilter : BaseFilter(
     }
 
     private fun initOesTexture() {
-        aPositionHandle = program.getAtrribLocation("aPosition")
+        aPositionHandle = program.getAttribLocation("aPosition")
         mvpMatrixHandle = program.getUniformLocation("uMVPMatrix")
-        aTextureHandle = program.getAtrribLocation("aTextureCoord")
+        aTextureHandle = program.getAttribLocation("aTextureCoord")
         stMatrixHandle = program.getUniformLocation("uSTMatrix")
         sTextureHandle = program.getUniformLocation("sTexture")
 
@@ -168,9 +166,9 @@ class TextureWithImageFilter : BaseFilter(
         GLES20.glUseProgram(bitmapProgram)
         checkGlError("glUseProgram")
 
-        val aPositionHandle = bitmapProgram.getAtrribLocation("aPosition")
+        val aPositionHandle = bitmapProgram.getAttribLocation("aPosition")
         val mvpMatrixHandle = bitmapProgram.getUniformLocation("uMVPMatrix")
-        val aTextureHandle = bitmapProgram.getAtrribLocation("aTextureCoord")
+        val aTextureHandle = bitmapProgram.getAttribLocation("aTextureCoord")
         val stMatrixHandle = bitmapProgram.getUniformLocation("uSTMatrix")
         val sTextureHandle = bitmapProgram.getUniformLocation("sTexture")
 

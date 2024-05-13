@@ -2,6 +2,8 @@ package com.guanshu.media.opengl.filters
 
 import com.guanshu.media.opengl.filters.FilterConstants.toFilter
 
+val DefaultRenderGraph = RenderGraph().apply { addFilter(FilterConstants.SINGLE_TEXTURE) }
+
 class RenderGraph() {
 
     constructor(filterId: Int) : this() {

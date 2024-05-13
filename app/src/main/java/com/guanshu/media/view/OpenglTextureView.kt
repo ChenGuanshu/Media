@@ -11,9 +11,10 @@ import android.util.AttributeSet
 import android.util.Size
 import android.view.Surface
 import android.view.TextureView
+import com.guanshu.media.opengl.RendererFactory
 import com.guanshu.media.opengl.TextureData
-import com.guanshu.media.opengl.TextureRender
 import com.guanshu.media.opengl.egl.EglManager
+import com.guanshu.media.opengl.filters.DefaultRenderGraph
 import com.guanshu.media.opengl.filters.FilterConstants
 import com.guanshu.media.opengl.newTexture
 import com.guanshu.media.utils.DefaultSize
@@ -36,7 +37,7 @@ class OpenglTextureView : TextureView {
     private var textureData: TextureData? = null
 
     private val frameAvailable = AtomicBoolean(false)
-    private val textureRender = TextureRender().apply { FilterConstants.SINGLE_TEXTURE }
+    private val textureRender = RendererFactory.createRenderer(DefaultRenderGraph)
 
     var onSurfaceCreate: ((Surface) -> Unit)? = null
         set(value) {

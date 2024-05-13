@@ -36,7 +36,7 @@ import com.guanshu.media.opengl.OesTextureProgram
 import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.checkGlError
 import com.guanshu.media.opengl.createProgram
-import com.guanshu.media.opengl.getAtrribLocation
+import com.guanshu.media.opengl.getAttribLocation
 import com.guanshu.media.opengl.getUniformLocation
 import com.guanshu.media.opengl.newTexture
 import com.guanshu.media.utils.Logger
@@ -79,8 +79,8 @@ private val imageVertexCoord = floatArrayOf(
 private const val TAG = "FlattenWithImageFilter"
 
 class FlattenWithImageFilter : BaseFilter(
-    OesTextureProgram.VERTEX_SHADER,
-    OesTextureProgram.FRAGMENT_SHADER,
+    ImageTextureProgram.VERTEX_SHADER,
+    ImageTextureProgram.FRAGMENT_SHADER,
 ) {
 
     private val mvpMatrix = FloatArray(16)
@@ -109,9 +109,9 @@ class FlattenWithImageFilter : BaseFilter(
     }
 
     private fun initOesTexture() {
-        aPositionHandle = program.getAtrribLocation("aPosition")
+        aPositionHandle = program.getAttribLocation("aPosition")
         mvpMatrixHandle = program.getUniformLocation("uMVPMatrix")
-        aTextureHandle = program.getAtrribLocation("aTextureCoord")
+        aTextureHandle = program.getAttribLocation("aTextureCoord")
         stMatrixHandle = program.getUniformLocation("uSTMatrix")
 
         val vertexBuffer = ByteBuffer.allocateDirect(vertexCoord.size * FLOAT_SIZE_BYTES)
@@ -196,7 +196,7 @@ class FlattenWithImageFilter : BaseFilter(
 
         val sTextureHandle = bitmapProgram.getUniformLocation("sTexture")
         glActiveTexture(GL_TEXTURE0)
-        glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureData.textureId)
+        glBindTexture(textureData.textureType, textureData.textureId)
         GLES20.glUniform1i(sTextureHandle, 0)
 
         Matrix.setIdentityM(mvpMatrix, 0)
@@ -239,9 +239,9 @@ class FlattenWithImageFilter : BaseFilter(
         glUseProgram(bitmapProgram)
         checkGlError("glUseProgram")
 
-        val aPositionHandle = bitmapProgram.getAtrribLocation("aPosition")
+        val aPositionHandle = bitmapProgram.getAttribLocation("aPosition")
         val mvpMatrixHandle = bitmapProgram.getUniformLocation("uMVPMatrix")
-        val aTextureHandle = bitmapProgram.getAtrribLocation("aTextureCoord")
+        val aTextureHandle = bitmapProgram.getAttribLocation("aTextureCoord")
         val stMatrixHandle = bitmapProgram.getUniformLocation("uSTMatrix")
         val sTextureHandle = bitmapProgram.getUniformLocation("sTexture")
 
