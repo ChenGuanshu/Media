@@ -16,6 +16,7 @@ import com.guanshu.media.opengl.bindFbo
 import com.guanshu.media.opengl.checkGlError
 import com.guanshu.media.opengl.egl.OpenglEnv
 import com.guanshu.media.opengl.filters.SingleImageTextureFilter
+import com.guanshu.media.opengl.filters.SmartTextureFilter
 import com.guanshu.media.opengl.filters.TextureWithImageFilter
 import com.guanshu.media.opengl.matrixReset
 import com.guanshu.media.opengl.newFbo
@@ -41,7 +42,8 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
 
     // main open env, render the texture to the surface
     private var mainOpenglEnv: OpenglEnv? = null
-    private val mainFilter = SingleImageTextureFilter()
+//    private val mainFilter = SingleImageTextureFilter()
+    private val mainFilter = SmartTextureFilter()
 
     // offscreen rendering from playback output to fbo
     private var secondOpenglEnv: OpenglEnv? = null
