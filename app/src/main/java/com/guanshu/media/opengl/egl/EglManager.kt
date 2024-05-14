@@ -6,7 +6,6 @@ import android.opengl.EGLConfig
 import android.opengl.EGLContext
 import android.opengl.EGLDisplay
 import android.opengl.EGLSurface
-import android.view.Surface
 import com.guanshu.media.utils.Logger
 
 private const val TAG = "EglManager"
@@ -19,7 +18,9 @@ class EglManager {
 
     private var eglSurface: EGLSurface? = null
 
-    fun init() {
+    fun getEglContext() = eglContext
+
+    fun init(sharedEglContext: EGLContext? = null) {
         eglDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY)
 
         if (eglDisplay == EGL14.EGL_NO_DISPLAY) {
@@ -56,7 +57,7 @@ class EglManager {
         eglContext = EGL14.eglCreateContext(
             eglDisplay,
             eglConfig,
-            EGL14.EGL_NO_CONTEXT,
+            sharedEglContext ?: EGL14.EGL_NO_CONTEXT,
             contextAttribList,
             0
         )
@@ -96,10 +97,6 @@ class EglManager {
     }
 
     fun makeEglCurrent() {
-        if (eglSurface == null) {
-            Logger.w(TAG, "makeEglCurrent: eglSurface is not init")
-            return
-        }
         // 绑定EGL上下文和表面
         if (!EGL14.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
             throw RuntimeException("Unable to make EGL context and surface current")
@@ -108,15 +105,11 @@ class EglManager {
     }
 
     fun makeUnEglCurrent() {
-        if (eglSurface == null) {
-            Logger.w(TAG, "makeUnEglCurrent: eglSurface is not init")
-            return
-        }
         if (!EGL14.eglMakeCurrent(
                 eglDisplay,
                 EGL14.EGL_NO_SURFACE,
                 EGL14.EGL_NO_SURFACE,
-                eglContext,
+                EGL14.EGL_NO_CONTEXT,
             )
         ) {
             throw RuntimeException("Unable to make EGL context and surface current")
