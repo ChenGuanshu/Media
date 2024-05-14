@@ -7,6 +7,8 @@ import com.guanshu.media.opengl.FLOAT_SIZE_BYTES
 import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.abstraction.VertexBuffer
 import com.guanshu.media.opengl.checkGlError
+import com.guanshu.media.opengl.matrixReset
+import com.guanshu.media.opengl.newMatrix
 import com.guanshu.media.opengl.program.ExternalTextureProgram
 import com.guanshu.media.opengl.updateTransformMatrix
 import com.guanshu.media.utils.Logger
@@ -28,7 +30,7 @@ private const val TAG = "SingleTextureFilter"
 class SingleTextureFilter : BaseFilter(ExternalTextureProgram()) {
 
     private lateinit var vertexBuffer: VertexBuffer
-    private val mvpMatrix = FloatArray(16)
+    private val mvpMatrix = newMatrix()
 
     // TODO FIXME
     private val exProgram = program as ExternalTextureProgram
@@ -47,7 +49,7 @@ class SingleTextureFilter : BaseFilter(ExternalTextureProgram()) {
         viewResolution: Size,
     ) {
         val textureData = textureDatas.first()
-        Matrix.setIdentityM(mvpMatrix, 0)
+        mvpMatrix.matrixReset()
         updateTransformMatrix(mvpMatrix, textureData.resolution, viewResolution)
 
         clear()

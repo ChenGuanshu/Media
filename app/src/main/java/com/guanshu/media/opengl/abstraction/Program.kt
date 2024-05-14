@@ -23,15 +23,12 @@ open class Program(
     }
 
     fun getAttrib(name: String) = Attribute(getAttribLocation(name))
-
-    @Deprecated("soon")
+    fun getAttrib(layout: Int) = Attribute(layout)
     fun getAttribLocation(name: String) = id.getAttribLocation(name)
+
     fun getUniform(name: String) = Uniform(getUniformLocation(name))
-
-
-    @Deprecated("soon")
+    fun getUniform(layout: Int) = Uniform(layout)
     fun getUniformLocation(name: String) = id.getUniformLocation(name)
-
     fun use() = GLES20.glUseProgram(id)
 
     class Attribute(private val id: Int) {
@@ -51,15 +48,17 @@ open class Program(
             )
             GLES20.glEnableVertexAttribArray(id)
         }
+
+        fun bindAttrib1fv(float: FloatArray) {
+            GLES20.glVertexAttrib1fv(id, float, 0)
+            GLES20.glEnableVertexAttribArray(id)
+        }
     }
 
     class Uniform(private val id: Int) {
-        fun bindUniform(
-            count: Int,
-            matrix: FloatArray,
-            offset: Int
-        ) {
+        fun bindUniform(count: Int, matrix: FloatArray, offset: Int) =
             GLES20.glUniformMatrix4fv(id, count, false, matrix, offset)
-        }
+
+        fun bindUniform(x: Int) = GLES20.glUniform1i(id, x)
     }
 }

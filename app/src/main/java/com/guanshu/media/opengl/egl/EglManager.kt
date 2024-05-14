@@ -2,6 +2,7 @@ package com.guanshu.media.opengl.egl
 
 import android.opengl.EGL14
 import android.opengl.EGL14.eglChooseConfig
+import android.opengl.EGL15
 import android.opengl.EGLConfig
 import android.opengl.EGLContext
 import android.opengl.EGLDisplay
@@ -33,6 +34,7 @@ class EglManager {
         }
 
         val configAttribList = intArrayOf(
+            EGL14.EGL_RENDERABLE_TYPE, EGL15.EGL_OPENGL_ES3_BIT,
             EGL14.EGL_RED_SIZE, 8,
             EGL14.EGL_GREEN_SIZE, 8,
             EGL14.EGL_BLUE_SIZE, 8,
@@ -40,9 +42,8 @@ class EglManager {
             EGL14.EGL_DEPTH_SIZE, 0,
             EGL14.EGL_STENCIL_SIZE, 0,
             EGL14.EGL_SAMPLE_BUFFERS, 0,
-            EGL14.EGL_NONE
+            EGL14.EGL_NONE,
         )
-
 
         val configs = arrayOfNulls<EGLConfig>(1)
         val numConfigs = IntArray(1)
@@ -52,8 +53,10 @@ class EglManager {
         }
         eglConfig = configs[0]!!
 
-        // 创建上下文
-        val contextAttribList = intArrayOf(EGL14.EGL_CONTEXT_CLIENT_VERSION, 2, EGL14.EGL_NONE)
+        val contextAttribList = intArrayOf(
+            EGL14.EGL_CONTEXT_CLIENT_VERSION, 3,
+            EGL14.EGL_NONE,
+        )
         eglContext = EGL14.eglCreateContext(
             eglDisplay,
             eglConfig,
