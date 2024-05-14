@@ -42,8 +42,8 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
 
     // main open env, render the texture to the surface
     private var mainOpenglEnv: OpenglEnv? = null
-//    private val mainFilter = SingleImageTextureFilter()
-    private val mainFilter = SmartTextureFilter()
+    private val mainFilter = SingleImageTextureFilter()
+//    private val mainFilter = SmartTextureFilter()
 
     // offscreen rendering from playback output to fbo
     private var secondOpenglEnv: OpenglEnv? = null

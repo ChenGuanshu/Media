@@ -5,6 +5,7 @@ import android.util.Size
 import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.abstraction.Program
 import com.guanshu.media.opengl.checkGlError
+import com.guanshu.media.utils.Logger
 
 private const val TAG = "BaseFilter"
 
@@ -18,7 +19,10 @@ abstract class BaseFilter(
     ) : this(Program(vertexShader, fragmentShader))
 
     override fun init() {
+        val start = System.nanoTime()
         program.init()
+        val cost = System.nanoTime() - start
+        Logger.d(TAG, "init program, cost:$cost,${cost / 1000_000}")
         checkGlError("BaseFilter:init")
     }
 
