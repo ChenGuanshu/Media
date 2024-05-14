@@ -50,5 +50,10 @@ class MainActivity : ComponentActivity() {
             val intent = Intent(this, CameraAndPlaybackGlSurface2Activity::class.java)
             startActivity(intent)
         }
+
+        findViewById<View>(R.id.playback_to_shared_egl_surface).setOnClickListener {
+            val intent = Intent(this, PlaybackSharedEglActivity::class.java)
+            startActivity(intent)
+        }
     }
 }

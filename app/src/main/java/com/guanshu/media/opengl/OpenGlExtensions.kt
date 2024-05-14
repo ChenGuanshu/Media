@@ -3,6 +3,8 @@ package com.guanshu.media.opengl
 import android.graphics.Bitmap
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
+import android.opengl.Matrix
+import android.util.Size
 import com.guanshu.media.utils.Logger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -11,6 +13,14 @@ private const val TAG = "OpenGL"
 
 const val FLOAT_SIZE_BYTES = 4
 const val INT_SIZE_BYTES = 4
+
+fun newMatrix(): FloatArray {
+    val ret = FloatArray(16)
+    Matrix.setIdentityM(ret, 0)
+    return ret
+}
+
+fun FloatArray.matrixReset() = Matrix.setIdentityM(this, 0)
 
 private fun loadShader(shaderType: Int, source: String): Int {
     var shader = GLES20.glCreateShader(shaderType)
@@ -144,6 +154,8 @@ fun newTexture(
         checkGlError("glTexParameter")
     }
 }
+
+fun readToBitmap(resolution: Size) = readToBitmap(resolution.width, resolution.height)
 
 fun readToBitmap(width: Int, height: Int): Bitmap {
     val buf = ByteBuffer.allocateDirect(width * height * 4)

@@ -117,7 +117,7 @@ class TextureWithImageFilter : BaseFilter(
     ) {
         val textureData = textureDatas.first()
 
-        GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f)
+        GLES20.glClearColor(1.0f, 0.0f, 0.0f, 1.0f)
         GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT or GLES20.GL_COLOR_BUFFER_BIT)
 
         renderOesTexture(textureData, viewResolution)
@@ -154,7 +154,7 @@ class TextureWithImageFilter : BaseFilter(
         GLES20.glEnableVertexAttribArray(aTextureHandle)
 
         Matrix.setIdentityM(mvpMatrix, 0)
-        updateTransformMatrix(mvpMatrix, textureData.resolution, viewResolution)
+//        updateTransformMatrix(mvpMatrix, textureData.resolution, viewResolution)
 
         GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
         GLES20.glUniformMatrix4fv(stMatrixHandle, 1, false, textureData.matrix, 0)
