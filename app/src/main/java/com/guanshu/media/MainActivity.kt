@@ -55,5 +55,10 @@ class MainActivity : ComponentActivity() {
             val intent = Intent(this, PlaybackSharedEglActivity::class.java)
             startActivity(intent)
         }
+
+        findViewById<View>(R.id.playback_ffmpeg).setOnClickListener {
+            val intent = Intent(this, FfmpegPlayerActivity::class.java)
+            startActivity(intent)
+        }
     }
 }
