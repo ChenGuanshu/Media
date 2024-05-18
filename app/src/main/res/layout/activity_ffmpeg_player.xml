@@ -7,9 +7,8 @@
     <TextView
         android:id="@+id/textview_ffmpeg"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:gravity="center"
-        android:text="test"
-        android:textSize="30sp" />
+        android:text="test" />
 
 </LinearLayout>

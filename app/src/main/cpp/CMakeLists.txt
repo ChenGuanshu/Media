@@ -12,6 +12,12 @@ cmake_minimum_required(VERSION 3.22.1)
 # build script scope).
 project("native-media")
 
+# 支持gnu++11
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
+
+#指定头文件路径
+include_directories(${CMAKE_SOURCE_DIR}/include)
+
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
@@ -26,13 +32,45 @@ project("native-media")
 # for GameActivity/NativeActivity derived applications, the same library name must be
 # used in the AndroidManifest.xml file.
 add_library(${CMAKE_PROJECT_NAME} SHARED
-    # List C/C++ source files with relative paths to this CMakeLists.txt.
-    media.cpp)
+        # List C/C++ source files with relative paths to this CMakeLists.txt.
+        media.cpp
+)
+
+set(libs "${CMAKE_SOURCE_DIR}/libs")
+
+function(buildlib)
+    add_library(avcodec SHARED IMPORTED)
+    set_target_properties(avcodec PROPERTIES IMPORTED_LOCATION ${libs}/libavcodec.so)
+
+    add_library(avdevice SHARED IMPORTED)
+    set_target_properties(avdevice PROPERTIES IMPORTED_LOCATION ${libs}/libavdevice.so)
+
+    add_library(avfilter SHARED IMPORTED)
+    set_target_properties(avfilter PROPERTIES IMPORTED_LOCATION ${libs}/libavfilter.so)
+
+    add_library(avformat SHARED IMPORTED)
+    set_target_properties(avformat PROPERTIES IMPORTED_LOCATION ${libs}/libavformat.so)
+
+    add_library(avutil SHARED IMPORTED)
+    set_target_properties(avutil PROPERTIES IMPORTED_LOCATION ${libs}/libavutil.so)
+
+    add_library(swresample SHARED IMPORTED)
+    set_target_properties(swresample PROPERTIES IMPORTED_LOCATION ${libs}/libswresample.so)
+
+    add_library(swscale SHARED IMPORTED)
+    set_target_properties(swscale PROPERTIES IMPORTED_LOCATION ${libs}/libswscale.so)
+endfunction()
+
+buildlib()
+set(ffmpeg avcodec avdevice avfilter avformat avutil swresample swscale)
 
 # Specifies libraries CMake should link to your target library. You
 # can link libraries from various origins, such as libraries defined in this
 # build script, prebuilt third-party libraries, or Android system libraries.
-target_link_libraries(${CMAKE_PROJECT_NAME}
-    # List libraries link to the target library
-    android
-    log)
+target_link_libraries(
+        ${CMAKE_PROJECT_NAME}
+        # List libraries link to the target library
+        android
+        log
+        ${ffmpeg}
+)
