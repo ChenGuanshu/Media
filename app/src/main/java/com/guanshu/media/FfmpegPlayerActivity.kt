@@ -41,6 +41,13 @@ class FfmpegPlayerActivity : ComponentActivity() {
         }.start()
     }
 
+    override fun onPause() {
+        super.onPause()
+        audioTrack?.stop()
+        audioTrack?.release()
+        audioTrack = null
+    }
+
     private external fun loadFfmpegInfo(): String
 
     private external fun decodeAudio(file: String): Int
@@ -51,13 +58,6 @@ class FfmpegPlayerActivity : ComponentActivity() {
         if (ret < 0) {
             Logger.d(TAG, "write audio track: $ret")
         }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        audioTrack?.stop()
-        audioTrack?.release()
-        audioTrack = null
     }
 
     private fun maybeInitAudioTrack() {
