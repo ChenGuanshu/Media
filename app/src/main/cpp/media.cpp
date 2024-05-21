@@ -2,8 +2,12 @@
 #include <string>
 #include <unistd.h>
 #include <android/log.h>
+#include <android/native_window.h>
+#include <android/native_window_jni.h>
 
 extern "C" {
+#include "libavutil/imgutils.h"
+#include "libswscale/swscale.h"
 #include "libavformat/avformat.h"
 #include "libavfilter/avfilter.h"
 #include "libavcodec/jni.h"
@@ -57,7 +61,7 @@ Java_com_guanshu_media_FfmpegPlayerActivity_loadFfmpegInfo(JNIEnv *env, jobject 
     return env->NewStringUTF(info.c_str());
 }
 
-bool stop = false;
+bool audioStop = false;
 
 #define AUDIO_INBUF_SIZE 20480
 #define AUDIO_REFILL_THRESH 4096
@@ -207,7 +211,7 @@ int decodeAudioV1(JNIEnv *env, jobject thiz, jstring file) {
 }
 
 int decodeAudioV2(JNIEnv *env, jobject thiz, jstring file) {
-    stop = false;
+    audioStop = false;
     const char *src = env->GetStringUTFChars(file, 0);
     AVFormatContext *formatCxt = nullptr;
     AVCodecContext *codecCxt = nullptr;
@@ -263,34 +267,33 @@ int decodeAudioV2(JNIEnv *env, jobject thiz, jstring file) {
                        44100, codecCxt->channel_layout, codecCxt->sample_fmt, codecCxt->sample_rate,
                        0, nullptr);
     swr_init(swrContext);
-    while (av_read_frame(formatCxt, avPacket) >= 0 && !stop) {
+    while (av_read_frame(formatCxt, avPacket) >= 0 && !audioStop) {
+        if (avPacket->stream_index != audioIndex) {
+            continue;
+        }
+        if (avcodec_send_packet(codecCxt, avPacket) != 0) {
+            return -1;
+        }
+        //用于存放解码后的数据
+        auto *out_buffer = (uint8_t *) av_malloc(2 * 44100);
+        //获取立体声声道数
+        int outChannelCount = av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO);
 
-        if (avPacket->stream_index == audioIndex) {
-            // TODO improve this
-            if (avcodec_send_packet(codecCxt, avPacket) != 0) {
-                return -1;
+        while (avcodec_receive_frame(codecCxt, avFrame) == 0) {
+            swr_convert(swrContext, &out_buffer, 2 * 44100, (const uint8_t **) avFrame->data,
+                        avFrame->nb_samples);
+            //获取输出数据的buffer size
+            int buffer_size = av_samples_get_buffer_size(nullptr, outChannelCount,
+                                                         avFrame->nb_samples,
+                                                         AV_SAMPLE_FMT_S16, 1);
+            jbyteArray arr = env->NewByteArray(buffer_size);
+            env->SetByteArrayRegion(arr, 0, buffer_size,
+                                    reinterpret_cast<const jbyte *>(out_buffer));
+            //将解码后的裸流输出到Java层
+            if (!audioStop) {
+                env->CallVoidMethod(thiz, onDataReceive, arr);
             }
-            //用于存放解码后的数据
-            auto *out_buffer = (uint8_t *) av_malloc(2 * 44100);
-            //获取立体声声道数
-            int outChannelCount = av_get_channel_layout_nb_channels(AV_CH_LAYOUT_STEREO);
-
-            while (avcodec_receive_frame(codecCxt, avFrame) == 0) {
-                swr_convert(swrContext, &out_buffer, 2 * 44100, (const uint8_t **) avFrame->data,
-                            avFrame->nb_samples);
-                //获取输出数据的buffer size
-                int buffer_size = av_samples_get_buffer_size(nullptr, outChannelCount,
-                                                             avFrame->nb_samples,
-                                                             AV_SAMPLE_FMT_S16, 1);
-                jbyteArray arr = env->NewByteArray(buffer_size);
-                env->SetByteArrayRegion(arr, 0, buffer_size,
-                                        reinterpret_cast<const jbyte *>(out_buffer));
-                //将解码后的裸流输出到Java层
-                if(!stop){
-                    env->CallVoidMethod(thiz, onDataReceive, arr);
-                }
-                env->DeleteLocalRef(arr);
-            }
+            env->DeleteLocalRef(arr);
         }
 
         av_packet_unref(avPacket);
@@ -304,7 +307,7 @@ int decodeAudioV2(JNIEnv *env, jobject thiz, jstring file) {
     if (!avFrame) {
         av_frame_free(&avFrame);
     }
-    stop = false;
+    audioStop = false;
 
     return rst;
 }
@@ -324,12 +327,145 @@ Java_com_guanshu_media_FfmpegPlayerActivity_decodeAudio(JNIEnv *env, jobject thi
 extern "C"
 JNIEXPORT void JNICALL
 Java_com_guanshu_media_FfmpegPlayerActivity_stopAudio(JNIEnv *env, jobject thiz) {
-    stop = true;
+    audioStop = true;
+}
+
+bool mediaStop = false;
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_guanshu_media_FfmpegPlayerActivity_stopMedia(JNIEnv *env, jobject thiz) {
+    mediaStop = true;
 }
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_guanshu_media_FfmpegPlayerActivity_decodeMedia(JNIEnv *env, jobject thiz, jstring file) {
-    // TODO: implement decodeMedia()
-    return -1;
+Java_com_guanshu_media_FfmpegPlayerActivity_decodeMedia(JNIEnv *env, jobject thiz, jstring file,
+                                                        jobject surface) {
+    LOGD("native decode media");
+    mediaStop = false;
+    const char *src = env->GetStringUTFChars(file, 0);
+    AVFormatContext *formatCxt = nullptr;
+    AVCodecContext *codecCxt = nullptr;
+    jclass activityClass = env->GetObjectClass(thiz);
+    jmethodID onDataReceive = env->GetMethodID(activityClass, "onDataReceive", "([B)V");
+
+    // 解封装
+    if (avformat_open_input(&formatCxt, src, nullptr, nullptr) != 0) {
+        return -1;
+    }
+
+    // 获取音视频流
+    if (avformat_find_stream_info(formatCxt, nullptr) != 0) {
+        return -1;
+    }
+
+    AVCodecID codec_id;
+    int videoIndex;
+    for (int i = 0; i < formatCxt->nb_streams; i++) {
+        AVStream *avStream = formatCxt->streams[i];
+        if (avStream->codecpar->codec_type == AVMEDIA_TYPE_VIDEO) {
+            //在此获取音频流的编码id
+            codec_id = avStream->codecpar->codec_id;
+            videoIndex = i;
+        }
+    }
+
+    if (!codec_id) {
+        return -1;
+    }
+
+    int ret;
+    AVPacket *avPacket = av_packet_alloc();
+    AVFrame *avFrame = av_frame_alloc();
+    AVFrame *rgbaFrame = av_frame_alloc();
+
+    //根据音频的编码id查找解码器
+    const AVCodec *avCodec = avcodec_find_decoder(codec_id);
+
+    codecCxt = avcodec_alloc_context3(avCodec);
+    avcodec_parameters_to_context(codecCxt, formatCxt->streams[videoIndex]->codecpar);
+    int rst = 0;
+    rst = avcodec_open2(codecCxt, avCodec, nullptr);
+
+    int videoWidth;
+    int videoHeight;
+    int bufferSize;
+    uint8_t *frameBuffer = nullptr;
+    SwsContext *swsContext = nullptr;
+
+    ANativeWindow *nativeWindow;
+    ANativeWindow_Buffer nativeWindowBuffer;
+
+    if (rst != 0) {
+        goto fail;
+    }
+    LOGD("Loaded codec");
+    LOGD(CodecInfo(avCodec).c_str());
+
+    videoWidth = codecCxt->width;
+    videoHeight = codecCxt->height;
+    LOGD("Resolution =%d,%d", videoWidth, videoHeight);
+
+    nativeWindow = ANativeWindow_fromSurface(env, surface);
+    ANativeWindow_setBuffersGeometry(nativeWindow, videoWidth, videoHeight,
+                                     WINDOW_FORMAT_RGBA_8888);
+    bufferSize = av_image_get_buffer_size(AV_PIX_FMT_RGBA, videoWidth, videoHeight, 1);
+    frameBuffer = (uint8_t *) av_malloc(bufferSize * sizeof(uint8_t));
+
+    swsContext = sws_getContext(videoWidth, videoHeight, codecCxt->pix_fmt,
+                                videoWidth, videoHeight, AV_PIX_FMT_RGBA,
+                                SWS_FAST_BILINEAR, NULL, NULL, NULL);
+
+    while (av_read_frame(formatCxt, avPacket) >= 0 && !mediaStop) {
+        if (avPacket->stream_index == videoIndex) {
+            if (avcodec_send_packet(codecCxt, avPacket) != 0) {
+                return -1;
+            }
+            while (avcodec_receive_frame(codecCxt, avFrame) == 0) {
+                av_image_fill_arrays(rgbaFrame->data, rgbaFrame->linesize, frameBuffer,
+                                     AV_PIX_FMT_RGBA,
+                                     videoWidth, videoHeight, 1);
+
+                sws_scale(swsContext, avFrame->data, avFrame->linesize, 0, videoHeight,
+                          rgbaFrame->data,
+                          rgbaFrame->linesize);
+
+                ANativeWindow_lock(nativeWindow, &nativeWindowBuffer, nullptr);
+                uint8_t *dstBuffer = static_cast<uint8_t *>(nativeWindowBuffer.bits);
+
+                int srcLineSize = rgbaFrame->linesize[0];//输入图的步长（一行像素有多少字节）
+                int dstLineSize = nativeWindowBuffer.stride * 4;//RGBA 缓冲区步长
+
+                for (int i = 0; i < videoHeight; ++i) {
+                    //一行一行地拷贝图像数据
+                    memcpy(dstBuffer + i * dstLineSize, frameBuffer + i * srcLineSize, srcLineSize);
+                }
+                ANativeWindow_unlockAndPost(nativeWindow);
+            }
+            av_packet_unref(avPacket);
+        }
+    }
+    LOGD("DONE playback");
+
+    fail:
+    avformat_close_input(&formatCxt);
+    avcodec_free_context(&codecCxt);
+    av_packet_free(&avPacket);
+    env->ReleaseStringUTFChars(file, src);
+    if (!swsContext) {
+        sws_freeContext(swsContext);
+    }
+    if (!frameBuffer) {
+        av_free(frameBuffer);
+    }
+    if (!avFrame) {
+        av_frame_free(&avFrame);
+    }
+    if (!rgbaFrame) {
+        av_frame_free(&rgbaFrame);
+    }
+    mediaStop = false;
+
+    return rst;
 }

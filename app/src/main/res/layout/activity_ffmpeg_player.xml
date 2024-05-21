@@ -4,11 +4,9 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/textview_ffmpeg"
+    <SurfaceView
+        android:id="@+id/surface_ffmpeg"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:gravity="center"
-        android:text="test" />
+        android:layout_height="match_parent"/>
 
 </LinearLayout>
