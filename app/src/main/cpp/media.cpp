@@ -57,6 +57,8 @@ Java_com_guanshu_media_FfmpegPlayerActivity_loadFfmpegInfo(JNIEnv *env, jobject 
     return env->NewStringUTF(info.c_str());
 }
 
+bool stop = false;
+
 #define AUDIO_INBUF_SIZE 20480
 #define AUDIO_REFILL_THRESH 4096
 
@@ -205,6 +207,7 @@ int decodeAudioV1(JNIEnv *env, jobject thiz, jstring file) {
 }
 
 int decodeAudioV2(JNIEnv *env, jobject thiz, jstring file) {
+    stop = false;
     const char *src = env->GetStringUTFChars(file, 0);
     AVFormatContext *formatCxt = nullptr;
     AVCodecContext *codecCxt = nullptr;
@@ -260,9 +263,10 @@ int decodeAudioV2(JNIEnv *env, jobject thiz, jstring file) {
                        44100, codecCxt->channel_layout, codecCxt->sample_fmt, codecCxt->sample_rate,
                        0, nullptr);
     swr_init(swrContext);
-    while (av_read_frame(formatCxt, avPacket) >= 0) {
+    while (av_read_frame(formatCxt, avPacket) >= 0 && !stop) {
 
         if (avPacket->stream_index == audioIndex) {
+            // TODO improve this
             if (avcodec_send_packet(codecCxt, avPacket) != 0) {
                 return -1;
             }
@@ -282,10 +286,14 @@ int decodeAudioV2(JNIEnv *env, jobject thiz, jstring file) {
                 env->SetByteArrayRegion(arr, 0, buffer_size,
                                         reinterpret_cast<const jbyte *>(out_buffer));
                 //将解码后的裸流输出到Java层
-                env->CallVoidMethod(thiz, onDataReceive, arr);
+                if(!stop){
+                    env->CallVoidMethod(thiz, onDataReceive, arr);
+                }
                 env->DeleteLocalRef(arr);
             }
         }
+
+        av_packet_unref(avPacket);
     }
 
     fail:
@@ -296,6 +304,7 @@ int decodeAudioV2(JNIEnv *env, jobject thiz, jstring file) {
     if (!avFrame) {
         av_frame_free(&avFrame);
     }
+    stop = false;
 
     return rst;
 }
@@ -303,10 +312,24 @@ int decodeAudioV2(JNIEnv *env, jobject thiz, jstring file) {
 extern "C"
 JNIEXPORT jint JNICALL
 Java_com_guanshu_media_FfmpegPlayerActivity_decodeAudio(JNIEnv *env, jobject thiz, jstring file) {
-    LOGD("start decode audio");
     if (false) {
+        LOGD("start decode audio v1");
         return decodeAudioV1(env, thiz, file);
     } else {
+        LOGD("start decode audio v2");
         return decodeAudioV2(env, thiz, file);
     }
+}
+
+extern "C"
+JNIEXPORT void JNICALL
+Java_com_guanshu_media_FfmpegPlayerActivity_stopAudio(JNIEnv *env, jobject thiz) {
+    stop = true;
+}
+
+extern "C"
+JNIEXPORT jint JNICALL
+Java_com_guanshu_media_FfmpegPlayerActivity_decodeMedia(JNIEnv *env, jobject thiz, jstring file) {
+    // TODO: implement decodeMedia()
+    return -1;
 }

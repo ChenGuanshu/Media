@@ -43,6 +43,7 @@ class FfmpegPlayerActivity : ComponentActivity() {
 
     override fun onPause() {
         super.onPause()
+        stopAudio()
         audioTrack?.stop()
         audioTrack?.release()
         audioTrack = null
@@ -51,6 +52,10 @@ class FfmpegPlayerActivity : ComponentActivity() {
     private external fun loadFfmpegInfo(): String
 
     private external fun decodeAudio(file: String): Int
+
+    private external fun stopAudio()
+
+    private external fun decodeMedia(file: String): Int
 
     private fun onDataReceive(data: ByteArray) {
         maybeInitAudioTrack()
