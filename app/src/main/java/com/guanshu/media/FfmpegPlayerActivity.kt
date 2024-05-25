@@ -13,18 +13,18 @@ import androidx.activity.ComponentActivity
 import com.guanshu.media.utils.Logger
 import com.guanshu.media.utils.MP3_PATH
 import com.guanshu.media.utils.VIDEO_PATH
+import com.guanshu.media.view.AdvancedOpenglSurfaceView
 import java.io.File
 
 private const val TAG = "FfmpegPlayerActivity"
 
-class FfmpegPlayerActivity : ComponentActivity(), SurfaceHolder.Callback {
+class FfmpegPlayerActivity : ComponentActivity() {
 
     init {
         System.loadLibrary("native-media")
     }
 
-    private lateinit var surfaceView: SurfaceView
-    private var surfaceHolder: SurfaceHolder? = null
+    private lateinit var surfaceView: AdvancedOpenglSurfaceView
     private var audioTrack: AudioTrack? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -32,32 +32,20 @@ class FfmpegPlayerActivity : ComponentActivity(), SurfaceHolder.Callback {
         Logger.i(TAG, "onCreate")
         setContentView(R.layout.activity_ffmpeg_player)
         surfaceView = findViewById(R.id.surface_ffmpeg)
-        surfaceView.holder.addCallback(this)
-    }
-
-    override fun surfaceCreated(holder: SurfaceHolder) {
-        Logger.d(TAG, "surfaceCreated")
-        surfaceHolder = holder
-        Thread {
-            Logger.d(TAG,"start decode media")
-            decodeMedia(VIDEO_PATH, holder.surface)
-        }.start()
-    }
-
-    override fun surfaceChanged(holder: SurfaceHolder, format: Int, width: Int, height: Int) {
-        Logger.d(TAG, "surfaceChanged $width*$height")
-        surfaceHolder = holder
-    }
-
-    override fun surfaceDestroyed(holder: SurfaceHolder) {
-        Logger.d(TAG, "surfaceDestroyed")
-        surfaceHolder = null
-        stopMedia()
+        surfaceView.init()
     }
 
     override fun onResume() {
         super.onResume()
-//        Thread {
+        Logger.i(TAG, "onResume")
+        surfaceView.requestSurface { surface ->
+            Logger.d(TAG,"requestSurface result: $surface")
+            Thread {
+                Logger.d(TAG,"start decode media")
+                decodeMedia(VIDEO_PATH, surface, surfaceView)
+            }.start()
+        }
+    //        Thread {
 //            val file = File(MP3_PATH)
 //            Logger.d(TAG, "file: $MP3_PATH")
 //            Logger.d(TAG, "file exist: ${file.exists()}, ${file.canRead()}")
@@ -70,9 +58,11 @@ class FfmpegPlayerActivity : ComponentActivity(), SurfaceHolder.Callback {
         super.onPause()
         stopAudio()
         stopMedia()
-        audioTrack?.stop()
-        audioTrack?.release()
-        audioTrack = null
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        surfaceView.release()
     }
 
     private external fun loadFfmpegInfo(): String
@@ -81,7 +71,11 @@ class FfmpegPlayerActivity : ComponentActivity(), SurfaceHolder.Callback {
 
     private external fun stopAudio()
 
-    private external fun decodeMedia(file: String, surface: Surface): Int
+    private external fun decodeMedia(
+        file: String,
+        surface: Surface,
+        surfaceView: AdvancedOpenglSurfaceView,
+    ): Int
 
     private external fun stopMedia()
 

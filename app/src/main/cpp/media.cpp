@@ -341,8 +341,12 @@ Java_com_guanshu_media_FfmpegPlayerActivity_stopMedia(JNIEnv *env, jobject thiz)
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_guanshu_media_FfmpegPlayerActivity_decodeMedia(JNIEnv *env, jobject thiz, jstring file,
-                                                        jobject surface) {
+Java_com_guanshu_media_FfmpegPlayerActivity_decodeMedia(
+        JNIEnv *env, jobject thiz,
+        jstring file,
+        jobject surface,
+        jobject surfaceView
+) {
     LOGD("native decode media");
     mediaStop = false;
     const char *src = env->GetStringUTFChars(file, 0);
@@ -397,6 +401,18 @@ Java_com_guanshu_media_FfmpegPlayerActivity_decodeMedia(JNIEnv *env, jobject thi
     ANativeWindow_Buffer nativeWindowBuffer;
     int64_t lastRts = -1;
     int64_t lastPts = -1;
+
+    // TODO(FIX) a mock resolution
+    jclass surfaceViewClass = env->GetObjectClass(surfaceView);
+    jmethodID setResolution = env->GetMethodID(surfaceViewClass, "setMediaResolution",
+                                               "(Landroid/util/Size;)V");
+    int w = 1080;
+    int h = 1920;
+    jclass sizeClass = env->FindClass("android/util/Size");
+    jmethodID sizeConstructor = env->GetMethodID(sizeClass, "<init>", "(II)V");
+    jobject sizeObject = env->NewObject(sizeClass, sizeConstructor, w, h);
+    env->CallVoidMethod(surfaceView, setResolution, sizeObject);
+//    env->DeleteLocalRef(sizeObject);
 
     if (rst != 0) {
         goto fail;

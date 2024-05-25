@@ -16,7 +16,6 @@ import com.guanshu.media.opengl.bindFbo
 import com.guanshu.media.opengl.checkGlError
 import com.guanshu.media.opengl.egl.OpenglEnv
 import com.guanshu.media.opengl.filters.SingleImageTextureFilter
-import com.guanshu.media.opengl.filters.SmartTextureFilter
 import com.guanshu.media.opengl.filters.TextureWithImageFilter
 import com.guanshu.media.opengl.matrixReset
 import com.guanshu.media.opengl.newFbo
@@ -27,7 +26,7 @@ import com.guanshu.media.opengl.unbindFbo
 import com.guanshu.media.utils.DefaultSize
 import com.guanshu.media.utils.Logger
 
-private const val TAG = "OpenglSurfaceView"
+private const val TAG = "AdvancedOpenglSurfaceView"
 
 class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
 
@@ -87,19 +86,19 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
 
     fun init() {
         Logger.d(TAG, "init")
-        mainOpenglEnv = OpenglEnv()
-        secondOpenglEnv = OpenglEnv()
+        mainOpenglEnv = OpenglEnv("main")
+        secondOpenglEnv = OpenglEnv("second")
 
-        mainOpenglEnv!!.init {
+        mainOpenglEnv?.initThread()
+        secondOpenglEnv?.initThread()
+
+        mainOpenglEnv?.initContext {
             Logger.d(TAG, "init main context done")
             mainFilter.init()
-
-            val context = mainOpenglEnv!!.getEglContext()
-            secondOpenglEnv!!.init(context) {
+            secondOpenglEnv!!.initContext(mainOpenglEnv!!.getEglContext()) {
                 Logger.d(TAG, "init second context done")
                 secondFilter.init()
             }
-
             maybeScheduleRender()
         }
     }
@@ -129,6 +128,8 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
                     GLES20.glViewport(0, 0, textData.resolution.width, textData.resolution.height)
                     secondFilter.render(listOf(textData), textData.resolution)
                     checkGlError("after second filter render")
+
+                    // TODO just a test code for debugging purpose
                     if (testBitmap == null && false) {
                         testBitmap = readToBitmap(textData.resolution)
                         Logger.d(TAG, "dump test bitmap")
@@ -141,7 +142,7 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
             surface = Surface(st)
             textureData = TextureData(textureId, newMatrix(), DefaultSize)
 
-            Logger.d(TAG, "request surface done: $textureId, $st, $surface")
+            Logger.d(TAG, "request surface done: textureId=$textureId, $st, $surface")
             callback(surface!!)
         }
     }
@@ -178,10 +179,7 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
                 if (viewResolution == DefaultSize) return@requestRender
                 val textData = fboTextureData ?: return@requestRender
 
-                // TODO, the result is black
                 try {
-//                    val start = System.nanoTime()
-
                     checkGlError("before main filter render")
                     textData.matrix.matrixReset()
                     GLES20.glViewport(0, 0, viewResolution.width, viewResolution.height)
@@ -190,11 +188,6 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
                         viewResolution,
                     )
                     checkGlError("after main filter render")
-
-//                    GLES20.glFinish()
-//                    val cost = System.nanoTime() - start
-//                    Logger.v(TAG,"main:cost=$cost, ${cost/1000_000}")
-
                     mainOpenglEnv?.swapBuffer()
                 } catch (e: Exception) {
                     error = true
@@ -237,7 +230,7 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
     }
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {
-        Logger.d(TAG, "surfaceCreated: $holder")
+        Logger.d(TAG, "surfaceDestroyed: $holder")
 
         surfaceHolder = null
         maybeReleaseEglSurface()

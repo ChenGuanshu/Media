@@ -16,8 +16,6 @@ import com.guanshu.media.opengl.RendererFactory
 import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.egl.EglManager
 import com.guanshu.media.opengl.filters.DefaultRenderGraph
-import com.guanshu.media.opengl.filters.FilterConstants
-import com.guanshu.media.opengl.filters.RenderGraph
 import com.guanshu.media.opengl.newTexture
 import com.guanshu.media.utils.DefaultSize
 import com.guanshu.media.utils.Logger

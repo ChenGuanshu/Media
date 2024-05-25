@@ -7,9 +7,10 @@ import android.os.HandlerThread
 import com.guanshu.media.opengl.newTexture
 import com.guanshu.media.utils.Logger
 
-private const val TAG = "OpenglEnv"
 
-class OpenglEnv {
+class OpenglEnv(name: String) {
+
+    private val TAG = "OpenglEnv#$name"
 
     private val egl = EglManager()
     private lateinit var glThread: HandlerThread
@@ -17,18 +18,23 @@ class OpenglEnv {
 
     fun getEglContext() = egl.getEglContext()
 
-    fun init(eglContext: EGLContext? = null, callback: () -> Unit) {
-        Logger.d(TAG, "init: shared eglContext = $eglContext")
+    fun initThread() {
+        Logger.d(TAG, "initThread")
         val glThread = HandlerThread(TAG)
         glThread.start()
+
+        this.glHandler = Handler(glThread.looper)
         this.glThread = glThread
+    }
 
-        glHandler = Handler(glThread.looper)
+
+    // blocking calling
+    fun initContext(eglContext: EGLContext? = null, callback: () -> Unit) {
+        Logger.d(TAG, "init: shared eglContext = $eglContext")
         postOrRun {
-            Logger.d(TAG, "init run")
             egl.init(eglContext)
-
             callback()
+            Logger.d(TAG, "init DONE")
         }
     }
 
@@ -80,12 +86,13 @@ class OpenglEnv {
 
     fun postOrRun(job: () -> Unit) {
         if (!::glThread.isInitialized) {
+            Logger.e(TAG, "postOrRun thread not init")
             return
         }
         if (Thread.currentThread() == glThread) {
             job.invoke()
-        } else {
-            glHandler.post(job)
+        } else if (!glHandler.post(job)) {
+            Logger.e(TAG, "postOrRun failed")
         }
     }
 }
