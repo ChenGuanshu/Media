@@ -4,19 +4,18 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
-import android.opengl.GLUtils
 import android.opengl.Matrix
 import android.util.Size
 import com.guanshu.media.opengl.FLOAT_SIZE_BYTES
 import com.guanshu.media.opengl.ImageTextureProgram
 import com.guanshu.media.opengl.OesTextureProgram
 import com.guanshu.media.opengl.TextureData
+import com.guanshu.media.opengl.abstraction.Sampler2DTexture
 import com.guanshu.media.opengl.checkGlError
 import com.guanshu.media.opengl.createProgram
 import com.guanshu.media.opengl.getAttribLocation
 import com.guanshu.media.opengl.getUniformLocation
-import com.guanshu.media.opengl.newTexture
-import com.guanshu.media.opengl.updateTransformMatrix
+import com.guanshu.media.opengl.newMatrix
 import com.guanshu.media.utils.Logger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -58,10 +57,9 @@ class TextureWithImageFilter : BaseFilter(
 
     private lateinit var bitmap: Bitmap
     private lateinit var imageVertexBuffer: FloatBuffer
-    private var bitmapTexture: Int = -12345
+    private lateinit var bitmapTexture: Sampler2DTexture
     private var bitmapProgram: Int = 0
-    private val imageMvpMatrix = FloatArray(16)
-    private val imageTextureMatrix = FloatArray(16)
+    private val imageMvpMatrix = newMatrix()
 
     override fun init() {
         super.init()
@@ -87,15 +85,9 @@ class TextureWithImageFilter : BaseFilter(
         val stream = this.javaClass.getResourceAsStream("/res/drawable/pikachu.png")
         bitmap = BitmapFactory
             .decodeStream(stream)
-
-        val textures = IntArray(1)
-        newTexture(textures, GLES20.GL_TEXTURE_2D)
-        bitmapTexture = textures[0]
-        GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
+        bitmapTexture = Sampler2DTexture.fromBitmap(bitmap)
         checkGlError("texImage2D")
-
-        Logger.i(TAG, "initBitmapTexture $bitmapTexture, ${bitmap.width},${bitmap.height}")
-
+        Logger.d(TAG, "initBitmapTexture $bitmapTexture, ${bitmap.width},${bitmap.height}")
         bitmapProgram = createProgram(
             ImageTextureProgram.VERTEX_SHADER,
             ImageTextureProgram.FRAGMENT_SHADER,
@@ -103,7 +95,7 @@ class TextureWithImageFilter : BaseFilter(
         if (bitmapProgram == 0) {
             throw RuntimeException("failed creating program")
         }
-        Logger.i(TAG, "initBitmapTexture, bitmapProgram=$bitmapProgram")
+        Logger.d(TAG, "initBitmapTexture, bitmapProgram=$bitmapProgram")
 
         imageVertexBuffer = ByteBuffer.allocateDirect(imageVerticesData.size * FLOAT_SIZE_BYTES)
             .order(ByteOrder.nativeOrder())
@@ -154,7 +146,6 @@ class TextureWithImageFilter : BaseFilter(
         GLES20.glEnableVertexAttribArray(aTextureHandle)
 
         Matrix.setIdentityM(mvpMatrix, 0)
-//        updateTransformMatrix(mvpMatrix, textureData.resolution, viewResolution)
 
         GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, mvpMatrix, 0)
         GLES20.glUniformMatrix4fv(stMatrixHandle, 1, false, textureData.matrix, 0)
@@ -172,8 +163,7 @@ class TextureWithImageFilter : BaseFilter(
         val stMatrixHandle = bitmapProgram.getUniformLocation("uSTMatrix")
         val sTextureHandle = bitmapProgram.getUniformLocation("sTexture")
 
-        GLES20.glActiveTexture(GLES20.GL_TEXTURE1)
-        GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, bitmapTexture)
+        bitmapTexture.bind(1)
         GLES20.glUniform1i(sTextureHandle, 1)
         checkGlError("glUniform1i")
 
@@ -195,10 +185,8 @@ class TextureWithImageFilter : BaseFilter(
         GLES20.glEnableVertexAttribArray(aTextureHandle)
 
         Matrix.setIdentityM(imageMvpMatrix, 0)
-        Matrix.setIdentityM(imageTextureMatrix, 0)
-
         GLES20.glUniformMatrix4fv(mvpMatrixHandle, 1, false, imageMvpMatrix, 0)
-        GLES20.glUniformMatrix4fv(stMatrixHandle, 1, false, imageTextureMatrix, 0)
+        GLES20.glUniformMatrix4fv(stMatrixHandle, 1, false, bitmapTexture.matrix, 0)
 
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4)
         checkGlError("glDrawArrays")

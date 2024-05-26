@@ -6,6 +6,7 @@
 #include <android/native_window_jni.h>
 
 extern "C" {
+#include "libavutil/time.h"
 #include "libavutil/imgutils.h"
 #include "libswscale/swscale.h"
 #include "libavformat/avformat.h"
@@ -340,15 +341,17 @@ Java_com_guanshu_media_FfmpegPlayerActivity_stopMedia(JNIEnv *env, jobject thiz)
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_guanshu_media_FfmpegPlayerActivity_decodeMedia(JNIEnv *env, jobject thiz, jstring file,
-                                                        jobject surface) {
+Java_com_guanshu_media_FfmpegPlayerActivity_decodeMedia(
+        JNIEnv *env, jobject thiz,
+        jstring file,
+        jobject surface,
+        jobject surfaceView
+) {
     LOGD("native decode media");
     mediaStop = false;
     const char *src = env->GetStringUTFChars(file, 0);
     AVFormatContext *formatCxt = nullptr;
     AVCodecContext *codecCxt = nullptr;
-    jclass activityClass = env->GetObjectClass(thiz);
-    jmethodID onDataReceive = env->GetMethodID(activityClass, "onDataReceive", "([B)V");
 
     // 解封装
     if (avformat_open_input(&formatCxt, src, nullptr, nullptr) != 0) {
@@ -396,6 +399,20 @@ Java_com_guanshu_media_FfmpegPlayerActivity_decodeMedia(JNIEnv *env, jobject thi
 
     ANativeWindow *nativeWindow;
     ANativeWindow_Buffer nativeWindowBuffer;
+    int64_t lastRts = -1;
+    int64_t lastPts = -1;
+
+    // TODO(FIX) a mock resolution
+    jclass surfaceViewClass = env->GetObjectClass(surfaceView);
+    jmethodID setResolution = env->GetMethodID(surfaceViewClass, "setMediaResolution",
+                                               "(Landroid/util/Size;)V");
+    int w = 1080;
+    int h = 1920;
+    jclass sizeClass = env->FindClass("android/util/Size");
+    jmethodID sizeConstructor = env->GetMethodID(sizeClass, "<init>", "(II)V");
+    jobject sizeObject = env->NewObject(sizeClass, sizeConstructor, w, h);
+    env->CallVoidMethod(surfaceView, setResolution, sizeObject);
+//    env->DeleteLocalRef(sizeObject);
 
     if (rst != 0) {
         goto fail;
@@ -441,6 +458,22 @@ Java_com_guanshu_media_FfmpegPlayerActivity_decodeMedia(JNIEnv *env, jobject thi
                     //一行一行地拷贝图像数据
                     memcpy(dstBuffer + i * dstLineSize, frameBuffer + i * srcLineSize, srcLineSize);
                 }
+
+                double pts_in_seconds =
+                        avPacket->pts * av_q2d(formatCxt->streams[videoIndex]->time_base);
+                int64_t curPts = (int64_t) (pts_in_seconds * 1000000); // us
+                int64_t curRts = av_gettime_relative();
+
+                if (lastRts >= 0 && lastPts >= 0) {
+                    int64_t expectedDelay = curPts - lastPts;
+                    int64_t actualDelay = curRts - lastRts;
+                    if (actualDelay < expectedDelay) {
+                        av_usleep(expectedDelay - actualDelay);
+                    }
+                }
+                lastRts = curRts;
+                lastPts = curPts;
+
                 ANativeWindow_unlockAndPost(nativeWindow);
             }
             av_packet_unref(avPacket);
