@@ -27,7 +27,6 @@ class OpenglEnv(name: String) {
         this.glThread = glThread
     }
 
-
     // blocking calling
     fun initContext(eglContext: EGLContext? = null, callback: () -> Unit) {
         Logger.d(TAG, "init: shared eglContext = $eglContext")

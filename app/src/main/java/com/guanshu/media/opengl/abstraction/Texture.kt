@@ -7,6 +7,8 @@ import android.opengl.GLES20
 import android.opengl.GLUtils
 import android.util.Size
 import com.guanshu.media.opengl.checkGlError
+import com.guanshu.media.opengl.flipVertical
+import com.guanshu.media.opengl.newMatrix
 import com.guanshu.media.opengl.newTexture
 
 // TODO
@@ -34,7 +36,8 @@ class ExternalTexture(
 class Sampler2DTexture(
     textureId: Int,
     resolution: Size,
-) : Texture(textureId, GLES20.GL_TEXTURE_2D, resolution) {
+    matrix: FloatArray = newMatrix(),
+) : Texture(textureId, GLES20.GL_TEXTURE_2D, resolution, matrix,) {
 
     companion object {
         fun fromBitmap(bitmap: Bitmap): Sampler2DTexture {
@@ -43,9 +46,12 @@ class Sampler2DTexture(
             GLUtils.texImage2D(GLES20.GL_TEXTURE_2D, 0, bitmap, 0)
             checkGlError("texImage2D")
 
+            val matrix = newMatrix()
+            matrix.flipVertical()
             val texture = Sampler2DTexture(
                 textures[0],
-                Size(bitmap.width, bitmap.height)
+                Size(bitmap.width, bitmap.height),
+                matrix,
             )
             bitmap.recycle()
             return texture

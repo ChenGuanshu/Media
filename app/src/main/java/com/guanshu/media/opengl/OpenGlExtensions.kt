@@ -22,6 +22,11 @@ fun newMatrix(): FloatArray {
 
 fun FloatArray.matrixReset() = Matrix.setIdentityM(this, 0)
 
+fun FloatArray.flipVertical() {
+    this[5] = -this[5]
+    this[13] += 1f //基于y=0.5进行翻转
+}
+
 private fun loadShader(shaderType: Int, source: String): Int {
     var shader = GLES20.glCreateShader(shaderType)
     checkGlError("glCreateShader type=$shaderType")
