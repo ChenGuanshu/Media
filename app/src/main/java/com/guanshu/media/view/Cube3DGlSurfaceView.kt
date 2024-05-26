@@ -4,8 +4,8 @@ import android.content.Context
 import android.opengl.GLES20
 import android.opengl.GLES30
 import android.opengl.GLSurfaceView
+import android.opengl.Matrix
 import android.util.AttributeSet
-import com.guanshu.media.opengl.FLOAT_SIZE_BYTES
 import com.guanshu.media.opengl.abstraction.VertexBuffer
 import com.guanshu.media.opengl.checkGlError
 import com.guanshu.media.opengl.matrixReset
@@ -69,13 +69,6 @@ class Cube3DGlSurfaceView : GLSurfaceView {
                 c, 0f, 0f, 1f,
             )
 
-//            // TODO
-//            vertexBuffer = floatArrayOf(
-//                0.8f, -0.8f, 0.0f,
-//                -0.8f, -0.8f, 0.0f,
-//                0.0f, 0.8f, 0.0f,
-//            )
-
             val index = intArrayOf(
                 0, 2, 1, 0, 2, 3, //前面
                 0, 5, 1, 0, 5, 4, //上面
@@ -84,11 +77,6 @@ class Cube3DGlSurfaceView : GLSurfaceView {
                 6, 3, 2, 6, 3, 7, //下面
                 6, 1, 2, 6, 1, 5 //左面
             )
-
-//            vertexBuffer = ByteBuffer.allocateDirect(vertex.size * Float.SIZE_BYTES)
-//                .order(ByteOrder.nativeOrder())
-//                .asFloatBuffer()
-//            vertexBuffer.put(vertex).position(0)
 
             indexBuffer = ByteBuffer.allocateDirect(index.size * Int.SIZE_BYTES)
                 .order(ByteOrder.nativeOrder())
@@ -141,7 +129,7 @@ class Cube3DGlSurfaceView : GLSurfaceView {
             GLES20.glDrawElements(
                 GLES30.GL_TRIANGLES,
                 6 * 6,
-                GLES30.GL_UNSIGNED_BYTE,
+                GLES30.GL_UNSIGNED_INT,
                 indexBuffer,
             )
             checkGlError("drawElements")
@@ -155,22 +143,21 @@ class Cube3DGlSurfaceView : GLSurfaceView {
 
 
         private fun transform() {
-            //初始化modelMatrix, viewMatrix, projectionMatrix
-//            modelMatrix.matrixReset()
-//            viewMatrix.matrixReset()
-//            projectionMatrix.matrixReset()
-//            curRotation = (curRotation + 2) % 360;
-//            Matrix.rotateM(modelMatrix, 0, curRotation, 1f, 1f, 1f); //获取模型旋转变换矩阵
-//            Matrix.setLookAtM(viewMatrix, 0, 0f, 5f, 10f, 0f, 0f, 0f, 0f, 1f, 0f) //获取观测变换矩阵
-//            Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 3f, 20f) //获取投影变换矩阵
-//
-//            //计算MVP变换矩阵: mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
-//            mvpMatrix.matrixReset()
-//            Matrix.multiplyMM(mvpMatrix, 0, viewMatrix, 0, modelMatrix, 0);
-//            Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, mvpMatrix, 0);
-            //设置MVP变换矩阵
+            // 初始化modelMatrix, viewMatrix, projectionMatrix
+            modelMatrix.matrixReset()
+            viewMatrix.matrixReset()
+            projectionMatrix.matrixReset()
+            curRotation = (curRotation + 2) % 360;
+            Matrix.rotateM(modelMatrix, 0, curRotation, 1f, 1f, 1f); //获取模型旋转变换矩阵
+            Matrix.setLookAtM(viewMatrix, 0, 0f, 5f, 10f, 0f, 0f, 0f, 0f, 1f, 0f) //获取观测变换矩阵
+            Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 3f, 20f) //获取投影变换矩阵
 
+            //计算MVP变换矩阵: mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
             mvpMatrix.matrixReset()
+            Matrix.multiplyMM(mvpMatrix, 0, viewMatrix, 0, modelMatrix, 0);
+            Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, mvpMatrix, 0);
+//            设置MVP变换矩阵
+
             program.matrixHandle.bindUniform(1, mvpMatrix, 0)
         }
     }
