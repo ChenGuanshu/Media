@@ -5,6 +5,7 @@ import com.guanshu.media.opengl.checkGlError
 import com.guanshu.media.opengl.createProgram
 import com.guanshu.media.opengl.getAttribLocation
 import com.guanshu.media.opengl.getUniformLocation
+import java.nio.Buffer
 
 open class Program(
     private val vertexShader: String,
@@ -25,7 +26,6 @@ open class Program(
     fun getAttrib(name: String) = Attribute(getAttribLocation(name))
     fun getAttrib(layout: Int) = Attribute(layout)
     fun getAttribLocation(name: String) = id.getAttribLocation(name)
-
     fun getUniform(name: String) = Uniform(getUniformLocation(name))
     fun getUniform(layout: Int) = Uniform(layout)
     fun getUniformLocation(name: String) = id.getUniformLocation(name)
@@ -49,9 +49,30 @@ open class Program(
             GLES20.glEnableVertexAttribArray(id)
         }
 
+        fun bindAttribPointer(
+            size: Int,
+            stride: Int,
+            buffer: Buffer,
+            type: Int = GLES20.GL_FLOAT,
+        ) {
+            GLES20.glVertexAttribPointer(
+                id,
+                size,
+                type,
+                false,
+                stride,
+                buffer,
+            )
+            GLES20.glEnableVertexAttribArray(id)
+        }
+
         fun bindAttrib1fv(float: FloatArray) {
             GLES20.glVertexAttrib1fv(id, float, 0)
             GLES20.glEnableVertexAttribArray(id)
+        }
+
+        fun glUniform1i() {
+
         }
     }
 

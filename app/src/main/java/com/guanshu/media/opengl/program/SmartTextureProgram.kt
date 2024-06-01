@@ -41,6 +41,9 @@ private const val FRAGMENT_SHADER = """
                 }
                 """
 
+/**
+ * TODO this is not working
+ */
 class SmartTextureProgram : Program(
     VERTEX_SHADER,
     FRAGMENT_SHADER,

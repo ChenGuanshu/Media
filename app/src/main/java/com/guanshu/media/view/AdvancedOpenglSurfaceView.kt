@@ -15,8 +15,8 @@ import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.bindFbo
 import com.guanshu.media.opengl.checkGlError
 import com.guanshu.media.opengl.egl.OpenglEnv
+import com.guanshu.media.opengl.filters.OverlayFilter
 import com.guanshu.media.opengl.filters.SingleImageTextureFilter
-import com.guanshu.media.opengl.filters.TextureWithImageFilter
 import com.guanshu.media.opengl.matrixReset
 import com.guanshu.media.opengl.newFbo
 import com.guanshu.media.opengl.newMatrix
@@ -46,7 +46,9 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
 
     // offscreen rendering from playback output to fbo
     private var secondOpenglEnv: OpenglEnv? = null
-    private val secondFilter = TextureWithImageFilter()
+
+    // TODO
+    private val secondFilter = OverlayFilter()
     private var fbo: Int = -1
     private var fboTexture: Int = -1
     private var fboTextureData: TextureData? = null
@@ -123,9 +125,11 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
                     surfaceText.updateTexImage()
                     surfaceText.getTransformMatrix(textData.matrix)
 
-                    maybeBindFbo(textData.resolution)
                     checkGlError("before second filter render")
                     GLES20.glViewport(0, 0, textData.resolution.width, textData.resolution.height)
+                    secondFilter.onBeforeDraw = {
+                        maybeBindFbo(textData.resolution)
+                    }
                     secondFilter.render(listOf(textData), textData.resolution)
                     checkGlError("after second filter render")
 
@@ -172,11 +176,12 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
         val fps = 30
         val delayMs = 1000L / fps
 
+        mainHandler.removeCallbacksAndMessages(null)
         mainHandler.postDelayed({
-
             mainOpenglEnv?.requestRender {
                 if (error) return@requestRender
                 if (viewResolution == DefaultSize) return@requestRender
+                if (surfaceHolder == null) return@requestRender
                 val textData = fboTextureData ?: return@requestRender
 
                 try {
@@ -194,7 +199,6 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
                     Logger.e(TAG, "draw error", e)
                 }
             }
-
             maybeScheduleRender()
 
         }, delayMs)
@@ -208,11 +212,13 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
 
     private fun maybeReleaseEglSurface() {
         Logger.d(TAG, "maybeReleaseEglSurface")
+        mainHandler.removeCallbacksAndMessages(null)
         mainOpenglEnv?.releaseEglSurface()
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
         Logger.d(TAG, "surfaceCreated: $holder")
+        maybeScheduleRender()
         if (holder == surfaceHolder) {
             return
         }

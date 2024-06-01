@@ -42,5 +42,6 @@ class ExternalTextureProgram : Program(
     val mvpMatrixHandle by lazy { getUniform("uMVPMatrix") }
     val aTextureHandle by lazy { getAttrib("aTextureCoord") }
     val stMatrixHandle by lazy { getUniform("uSTMatrix") }
+    val sTextureHandle by lazy { getUniform("sTexture") }
 
 }
