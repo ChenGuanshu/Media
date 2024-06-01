@@ -6,6 +6,8 @@ import android.opengl.GLES30
 import android.opengl.GLSurfaceView
 import android.opengl.Matrix
 import android.util.AttributeSet
+import android.view.MotionEvent
+import android.view.View
 import com.guanshu.media.opengl.abstraction.VertexBuffer
 import com.guanshu.media.opengl.checkGlError
 import com.guanshu.media.opengl.matrixReset
@@ -20,7 +22,7 @@ import javax.microedition.khronos.opengles.GL10
 
 private const val TAG = "Cube3DGlSurfaceView"
 
-class Cube3DGlSurfaceView : GLSurfaceView {
+class Cube3DGlSurfaceView : GLSurfaceView, View.OnTouchListener {
 
     constructor(context: Context) : super(context, null)
     constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
@@ -28,10 +30,10 @@ class Cube3DGlSurfaceView : GLSurfaceView {
     init {
         setEGLContextClientVersion(3)
         setRenderer(Cube3dRenderer())
+        setOnTouchListener(this)
     }
 
     inner class Cube3dRenderer : Renderer {
-
 
         private val vertexBuffer: FloatArray
         private val indexBuffer: IntBuffer
@@ -143,22 +145,52 @@ class Cube3DGlSurfaceView : GLSurfaceView {
 
 
         private fun transform() {
-            // 初始化modelMatrix, viewMatrix, projectionMatrix
             modelMatrix.matrixReset()
             viewMatrix.matrixReset()
             projectionMatrix.matrixReset()
-            curRotation = (curRotation + 2) % 360;
-            Matrix.rotateM(modelMatrix, 0, curRotation, 1f, 1f, 1f); //获取模型旋转变换矩阵
-            Matrix.setLookAtM(viewMatrix, 0, 0f, 5f, 10f, 0f, 0f, 0f, 0f, 1f, 0f) //获取观测变换矩阵
+            mvpMatrix.matrixReset()
+            if (moveX != 0f) {
+                Matrix.rotateM(modelMatrix, 0, moveX / 10, 0f, 1f, 0f)
+            }
+            if (moveY != 0f) {
+                Matrix.rotateM(modelMatrix, 0, moveY / 10, 1f, 0f, 0f)
+            }
+
+            Matrix.setLookAtM(viewMatrix, 0, 0f, 0f, 10f, 0f, 0f, 0f, 0f, 1f, 0f) //获取观测变换矩阵
             Matrix.frustumM(projectionMatrix, 0, -ratio, ratio, -1f, 1f, 3f, 20f) //获取投影变换矩阵
 
             //计算MVP变换矩阵: mvpMatrix = projectionMatrix * viewMatrix * modelMatrix
-            mvpMatrix.matrixReset()
-            Matrix.multiplyMM(mvpMatrix, 0, viewMatrix, 0, modelMatrix, 0);
-            Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, mvpMatrix, 0);
-//            设置MVP变换矩阵
+            Matrix.multiplyMM(mvpMatrix, 0, viewMatrix, 0, modelMatrix, 0)
+            Matrix.multiplyMM(mvpMatrix, 0, projectionMatrix, 0, mvpMatrix, 0)
 
             program.matrixHandle.bindUniform(1, mvpMatrix, 0)
         }
+    }
+
+    private var moveX = 0f
+    private var moveY = 0f
+    private var x = 0f
+    private var y = 0f
+
+    override fun onTouch(v: View?, event: MotionEvent?): Boolean {
+        if (event == null) return false
+//        Logger.v(TAG, "onTouch ${event.toString()}")
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                x = event.x
+                y = event.y
+            }
+
+            MotionEvent.ACTION_MOVE -> {
+                moveX = (event.x - x)
+                moveY = (event.y - y)
+            }
+
+            MotionEvent.ACTION_UP -> {
+                x = 0f
+                y = 0f
+            }
+        }
+        return true
     }
 }
