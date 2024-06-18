@@ -4,6 +4,7 @@ import android.graphics.SurfaceTexture
 import android.opengl.EGLContext
 import android.os.Handler
 import android.os.HandlerThread
+import android.util.Log
 import com.guanshu.media.opengl.newTexture
 import com.guanshu.media.utils.Logger
 
@@ -16,7 +17,15 @@ class OpenglEnv(name: String) {
     private lateinit var glThread: HandlerThread
     private lateinit var glHandler: Handler
 
+    @Transient
+    var error: Exception? = null
+        private set
+
     fun getEglContext() = egl.getEglContext()
+
+    fun clearError() {
+        error = null
+    }
 
     fun initThread() {
         Logger.d(TAG, "initThread")
@@ -47,7 +56,16 @@ class OpenglEnv(name: String) {
     }
 
     fun requestRender(onDraw: () -> Unit) {
-        postOrRun(onDraw)
+        if (error != null) return
+
+        postOrRun {
+            try {
+                onDraw()
+            } catch (e: Exception) {
+                Log.e(TAG, "requestRender error, please fix and clear it", e)
+                error = e
+            }
+        }
     }
 
     fun swapBuffer() = postOrRun { egl.swapBuffer() }

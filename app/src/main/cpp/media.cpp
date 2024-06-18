@@ -479,7 +479,7 @@ Java_com_guanshu_media_FfmpegPlayerActivity_decodeMedia(
             av_packet_unref(avPacket);
         }
     }
-    LOGD("DONE playback");
+    LOGD("playback DONE");
 
     fail:
     avformat_close_input(&formatCxt);

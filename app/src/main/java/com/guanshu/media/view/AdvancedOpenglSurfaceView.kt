@@ -52,7 +52,6 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
     private var fbo: Int = -1
     private var fboTexture: Int = -1
     private var fboTextureData: TextureData? = null
-    private var testBitmap: Bitmap? = null
 
     // For decoding output, built from second opengl ev
     private var surfaceTexture: SurfaceTexture? = null
@@ -121,6 +120,7 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
                 if (textData.resolution == DefaultSize) return@setOnFrameAvailableListener
 
                 secondOpenglEnv?.requestRender {
+                    // second渲染线程，负责把特效&source提前做离屏渲染
                     textData.matrix.matrixReset()
                     surfaceText.updateTexImage()
                     surfaceText.getTransformMatrix(textData.matrix)
@@ -128,16 +128,12 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
                     checkGlError("before second filter render")
                     GLES20.glViewport(0, 0, textData.resolution.width, textData.resolution.height)
                     secondFilter.onBeforeDraw = {
+                        checkGlError("before second filter maybeBindFbo")
                         maybeBindFbo(textData.resolution)
+                        checkGlError("after second filter maybeBindFbo")
                     }
                     secondFilter.render(listOf(textData), textData.resolution)
                     checkGlError("after second filter render")
-
-                    // TODO just a test code for debugging purpose
-                    if (testBitmap == null && false) {
-                        testBitmap = readToBitmap(textData.resolution)
-                        Logger.d(TAG, "dump test bitmap")
-                    }
                     unbindFbo()
                 }
             }
@@ -178,6 +174,7 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
 
         mainHandler.removeCallbacksAndMessages(null)
         mainHandler.postDelayed({
+            // 主渲染线程，负责上屏
             mainOpenglEnv?.requestRender {
                 if (error) return@requestRender
                 if (viewResolution == DefaultSize) return@requestRender

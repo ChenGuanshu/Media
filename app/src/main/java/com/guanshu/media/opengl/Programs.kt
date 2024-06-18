@@ -39,8 +39,11 @@ object ImageTextureProgram {
                 precision mediump float;
                 varying vec2 vTextureCoord;
                 uniform sampler2D sTexture;
+                uniform float alpha;
                 void main() {
-                    gl_FragColor = texture2D(sTexture, vTextureCoord);
+                    vec4 color = texture2D(sTexture, vTextureCoord);
+                    color.a = alpha;
+                    gl_FragColor = color;
                 }
                 """
 }

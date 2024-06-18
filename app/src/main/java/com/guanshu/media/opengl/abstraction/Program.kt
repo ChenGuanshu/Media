@@ -77,9 +77,9 @@ open class Program(
     }
 
     class Uniform(private val id: Int) {
+        fun bindUniform(x: Int) = GLES20.glUniform1i(id, x)
+        fun bindUniform(x: Float) = GLES20.glUniform1f(id, x)
         fun bindUniform(count: Int, matrix: FloatArray, offset: Int) =
             GLES20.glUniformMatrix4fv(id, count, false, matrix, offset)
-
-        fun bindUniform(x: Int) = GLES20.glUniform1i(id, x)
     }
 }

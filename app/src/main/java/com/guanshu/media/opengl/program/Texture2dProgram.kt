@@ -13,4 +13,5 @@ class Texture2dProgram : Program(
     val aTextureHandle by lazy { getAttrib("aTextureCoord") }
     val stMatrixHandle by lazy { getUniform("uSTMatrix") }
     val sTextureHandle by lazy { getUniform("sTexture") }
+    val alphaHandle by lazy { getUniform("alpha") }
 }
