@@ -9,11 +9,22 @@
         android:orientation="vertical">
 
         <TextView
+            android:id="@+id/cube_3d"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="20dp"
+            android:background="@color/purple_200"
+            android:gravity="center"
+            android:text="cube_3d"
+            android:textSize="20sp" />
+
+        <TextView
             android:id="@+id/camera2_to_surface"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:layout_marginTop="10dp"
+            android:layout_marginTop="20dp"
             android:background="@color/purple_200"
             android:gravity="center"
             android:text="camera2_to_surface"

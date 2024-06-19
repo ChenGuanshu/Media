@@ -16,6 +16,11 @@ class MainActivity : ComponentActivity() {
 
         setContentView(R.layout.activity_main)
 
+        findViewById<View>(R.id.cube_3d).setOnClickListener {
+            val intent = Intent(this, Cube3dActivity::class.java)
+            startActivity(intent)
+        }
+
         findViewById<View>(R.id.camera2_to_surface).setOnClickListener {
             val intent = Intent(this, Camera2SurfaceActivity::class.java)
             startActivity(intent)
