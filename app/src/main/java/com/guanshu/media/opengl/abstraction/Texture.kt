@@ -11,7 +11,6 @@ import com.guanshu.media.opengl.flipVertical
 import com.guanshu.media.opengl.newMatrix
 import com.guanshu.media.opengl.newTexture
 
-// TODO
 abstract class Texture(
     val textureId: Int,
     val textureType: Int,
@@ -32,7 +31,6 @@ class ExternalTexture(
     resolution: Size,
 ) : Texture(textureId, GLES11Ext.GL_TEXTURE_EXTERNAL_OES, resolution)
 
-// TODO flip the texture
 class Sampler2DTexture(
     textureId: Int,
     resolution: Size,
@@ -52,6 +50,7 @@ class Sampler2DTexture(
             checkGlError("texImage2D")
 
             val matrix = newMatrix()
+            // the bitmap is reversed loaded into the texture
             matrix.flipVertical()
             val texture = Sampler2DTexture(
                 textures[0],

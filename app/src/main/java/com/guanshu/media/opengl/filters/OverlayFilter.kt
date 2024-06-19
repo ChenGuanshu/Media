@@ -3,8 +3,8 @@ package com.guanshu.media.opengl.filters
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.opengl.GLES20
-import android.util.Log
 import android.util.Size
+import com.guanshu.media.opengl.PerfLogger
 import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.abstraction.Sampler2DTexture
 import com.guanshu.media.opengl.bindFbo
@@ -15,7 +15,6 @@ import com.guanshu.media.opengl.newFbo
 import com.guanshu.media.opengl.newMatrix
 import com.guanshu.media.opengl.program.ExternalTextureProgram
 import com.guanshu.media.opengl.program.Texture2dProgram
-import com.guanshu.media.opengl.readToBitmap
 import com.guanshu.media.opengl.toFloatBuffer
 import com.guanshu.media.opengl.toIntBuffer
 import com.guanshu.media.opengl.unbindFbo
@@ -51,6 +50,10 @@ private val imageIndex = buildIndexArray(imageVertex)
 
 private const val TAG = "OverlayFilter"
 private const val ALPHA = 0.5f
+private const val DEBUG = true
+private fun maybeGlFinish() {
+    if (DEBUG) GLES20.glFinish()
+}
 
 class OverlayFilter : BaseFilter(ExternalTextureProgram()) {
 
@@ -65,6 +68,8 @@ class OverlayFilter : BaseFilter(ExternalTextureProgram()) {
     private val imageProgram = Texture2dProgram()
     private val imageMvpMatrix = newMatrix()
     private var cachedTexture: Sampler2DTexture? = null
+
+    private val perfLogger = PerfLogger()
 
     var onBeforeDraw: (() -> Unit)? = null
 
@@ -86,13 +91,22 @@ class OverlayFilter : BaseFilter(ExternalTextureProgram()) {
     override fun render(textureDatas: List<TextureData>, viewResolution: Size) {
         GLES20.glEnable(GLES20.GL_BLEND)
         GLES20.glBlendFunc(GLES20.GL_SRC_ALPHA, GLES20.GL_ONE_MINUS_SRC_ALPHA)
-
-        maybeInitCacheTexture(viewResolution)
+        perfLogger.logPerf("initCacheTexture") {
+            maybeInitCacheTexture(viewResolution)
+            maybeGlFinish()
+        }
         onBeforeDraw?.invoke()
         GLES20.glClearColor(0.0f, 0.0f, 0.0f, 0.0f)
         GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT or GLES20.GL_COLOR_BUFFER_BIT)
-        renderOesTexture(textureDatas.first(), viewResolution)
-        renderImageTexture()
+        perfLogger.logPerf("renderOesTexture") {
+            renderOesTexture(textureDatas.first(), viewResolution)
+            maybeGlFinish()
+        }
+        perfLogger.logPerf("renderImageTexture") {
+            renderImageTexture()
+            maybeGlFinish()
+        }
+        if (DEBUG) perfLogger.print()
 
         GLES20.glDisable(GLES20.GL_BLEND)
     }

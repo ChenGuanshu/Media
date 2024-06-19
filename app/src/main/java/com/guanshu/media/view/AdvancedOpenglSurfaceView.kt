@@ -47,7 +47,6 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
     // offscreen rendering from playback output to fbo
     private var secondOpenglEnv: OpenglEnv? = null
 
-    // TODO
     private val secondFilter = OverlayFilter()
     private var fbo: Int = -1
     private var fboTexture: Int = -1

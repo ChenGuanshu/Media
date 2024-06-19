@@ -204,7 +204,6 @@ class Camera2(private val context: Context) {
                                     CaptureRequest.CONTROL_AE_MODE,
                                     CaptureRequest.CONTROL_AE_MODE_ON_AUTO_FLASH
                                 )
-                                // TODO
 //                                captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, 90)
                                 val request = previewRequestBuilder!!.build();
                                 session.setRepeatingBurst(listOf(request), null, cameraHandler)

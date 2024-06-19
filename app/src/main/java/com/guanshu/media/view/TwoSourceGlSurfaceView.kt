@@ -80,7 +80,6 @@ class TwoSourceGlSurfaceView : GLSurfaceView {
         override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
             Logger.i(TAG, "onSurfaceChanged $width, $height")
             GLES20.glViewport(0, 0, width, height)
-            // TODO
             surfaceTextures.forEach { it.setDefaultBufferSize(width, height) }
             viewResolution = Size(width, height)
         }
