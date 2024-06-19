@@ -33,6 +33,7 @@ object OesTextureProgram {
                 """
 }
 
+// TODO 加了 alpha之后，break了很多filter，以后再说把
 object ImageTextureProgram {
     const val VERTEX_SHADER = OesTextureProgram.VERTEX_SHADER
     const val FRAGMENT_SHADER = """
