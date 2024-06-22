@@ -50,7 +50,7 @@ private val imageIndex = buildIndexArray(imageVertex)
 
 private const val TAG = "OverlayFilter"
 private const val ALPHA = 0.5f
-private const val DEBUG = false
+private const val DEBUG = true
 private fun maybeGlFinish() {
     if (DEBUG) GLES20.glFinish()
 }
@@ -124,7 +124,7 @@ class OverlayFilter : BaseFilter(ExternalTextureProgram()) {
             renderImageTexture()
             maybeGlFinish()
         }
-        if (DEBUG) perfLogger.print()
+//        if (DEBUG) perfLogger.print()
 
         GLES20.glDisable(GLES20.GL_BLEND)
     }

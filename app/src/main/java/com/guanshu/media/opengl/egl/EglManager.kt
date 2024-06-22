@@ -142,9 +142,9 @@ class EglManager {
     }
 
     fun release() {
+        Logger.d(TAG, "release $eglDisplay, $eglContext")
         releaseEglSurface()
         EGL14.eglDestroyContext(eglDisplay, eglContext)
         EGL14.eglTerminate(eglDisplay)
-        Logger.d(TAG, "release")
     }
 }
