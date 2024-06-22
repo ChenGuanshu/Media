@@ -2,6 +2,7 @@ package com.guanshu.media.opengl.egl
 
 import android.graphics.SurfaceTexture
 import android.opengl.EGLContext
+import android.opengl.GLES20
 import android.os.Handler
 import android.os.HandlerThread
 import android.util.Log
@@ -61,6 +62,7 @@ class OpenglEnv(name: String) {
         postOrRun {
             try {
                 onDraw()
+                GLES20.glFlush()
             } catch (e: Exception) {
                 Log.e(TAG, "requestRender error, please fix and clear it", e)
                 error = e

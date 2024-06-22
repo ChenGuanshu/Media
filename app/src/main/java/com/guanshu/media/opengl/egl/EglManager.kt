@@ -65,7 +65,7 @@ class EglManager {
             0
         )
 
-        if (eglContext == null || eglContext === EGL14.EGL_NO_CONTEXT) {
+        if (eglContext === EGL14.EGL_NO_CONTEXT) {
             throw RuntimeException("Unable to create EGL context")
         }
 

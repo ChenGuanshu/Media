@@ -50,7 +50,7 @@ private val imageIndex = buildIndexArray(imageVertex)
 
 private const val TAG = "OverlayFilter"
 private const val ALPHA = 0.5f
-private const val DEBUG = true
+private const val DEBUG = false
 private fun maybeGlFinish() {
     if (DEBUG) GLES20.glFinish()
 }
@@ -62,9 +62,13 @@ private fun maybeGlFinish() {
  * renderOesTexture, run 182 times, avg cost:2019756.0824175824 ns, 2.019756082417582 ms
  * renderImageTexture, run 182 times, avg cost:1719746.1098901099 ns, 1.71974610989011 ms
  *
- * B: 16张图片每次都重新渲染
+ * B: 16张图片每次用一个draw call重新渲染
  * renderOesTexture, run 182 times, avg cost:2052554.5934065934 ns, 2.0525545934065934 ms
  * renderImageTexture, run 182 times, avg cost:3033459.230769231 ns, 3.033459230769231 ms
+ *
+ * C: 16张图片每次用独立的draw call重新渲染
+ * renderOesTexture, run 182 times, avg cost:2145864.4285714286 ns, 2.1458644285714286 ms
+ * renderImageTexture, run 182 times, avg cost:3810358.401098901 ns, 3.810358401098901 ms
  *
  * 从渲染效率上看，每帧率的渲染时长从5ms优化到4ms，提升20%
  * 但对于帧率为30fps的视频来说，几乎没有影响。渲染速度的优化，最好针对于临界值的情况，比如30fps，每帧渲染渲染超过33ms。

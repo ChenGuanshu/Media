@@ -3,7 +3,7 @@ package com.guanshu.media.opengl
 import android.os.SystemClock
 import com.guanshu.media.utils.Logger
 
-class PerfLogger() {
+class PerfLogger {
 
     private val TAG = "PerfLogger"
     private val tagToTime = hashMapOf<String, ArrayList<Long>>()

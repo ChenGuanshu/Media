@@ -3,6 +3,7 @@ package com.guanshu.media.opengl
 import android.graphics.Bitmap
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
+import android.opengl.GLES30
 import android.opengl.Matrix
 import android.util.Size
 import com.guanshu.media.utils.Logger
@@ -15,6 +16,12 @@ private const val TAG = "OpenGL"
 
 const val FLOAT_SIZE_BYTES = 4
 const val INT_SIZE_BYTES = 4
+
+fun fence() = GLES30.glFenceSync(GLES30.GL_SYNC_GPU_COMMANDS_COMPLETE, 0)
+fun Long.waitFence() {
+    GLES30.glWaitSync(this, 0, GLES30.GL_TIMEOUT_IGNORED)
+    GLES30.glDeleteSync(this)
+}
 
 fun newMatrix(): FloatArray {
     val ret = FloatArray(16)
