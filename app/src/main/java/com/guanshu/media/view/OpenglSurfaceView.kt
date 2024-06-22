@@ -133,7 +133,6 @@ class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
             Logger.w(TAG, "glThread is not init")
             return
         }
-        glHandler?.removeCallbacksAndMessages(null)
         postOrRun {
             Logger.d(TAG, "release run")
             maybeReleaseEglSurface()
@@ -157,10 +156,7 @@ class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
         val delayMs = 1000L / fps
 
         glHandler?.removeCallbacksAndMessages(null)
-        glHandler?.postDelayed({
-//            Logger.v(TAG, "schedule render: $delayMs")
-            requestRender()
-        }, delayMs)
+        glHandler?.postDelayed({ requestRender() }, delayMs)
     }
 
     private fun requestUpdate(surfaceTexture: SurfaceTexture) {
@@ -218,6 +214,7 @@ class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
 
     private fun maybeReleaseEglSurface() {
         Logger.d(TAG, "maybeReleaseEglSurface")
+        glHandler?.removeCallbacksAndMessages(null)
         postOrRun {
             Logger.d(TAG, "maybeReleaseEglSurface run")
             egl.makeUnEglCurrent()
@@ -228,6 +225,7 @@ class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
     override fun surfaceCreated(holder: SurfaceHolder) {
         Logger.d(TAG, "surfaceCreated: $holder")
         if (holder == surfaceHolder) {
+            maybeScheduleRender()
             return
         }
 
@@ -242,9 +240,7 @@ class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
         surfaceHolder = holder
         viewResolution = Size(width, height)
         surfaceTextures.forEach { it.setDefaultBufferSize(width, height) }
-        postOrRun {
-            GLES20.glViewport(0, 0, width, height)
-        }
+        postOrRun { GLES20.glViewport(0, 0, width, height) }
     }
 
     override fun surfaceDestroyed(holder: SurfaceHolder) {

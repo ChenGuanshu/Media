@@ -65,7 +65,7 @@ class EglManager {
             0
         )
 
-        if (eglContext == null || eglContext === EGL14.EGL_NO_CONTEXT) {
+        if (eglContext === EGL14.EGL_NO_CONTEXT) {
             throw RuntimeException("Unable to create EGL context")
         }
 
@@ -142,9 +142,9 @@ class EglManager {
     }
 
     fun release() {
+        Logger.d(TAG, "release $eglDisplay, $eglContext")
         releaseEglSurface()
         EGL14.eglDestroyContext(eglDisplay, eglContext)
         EGL14.eglTerminate(eglDisplay)
-        Logger.d(TAG, "release")
     }
 }

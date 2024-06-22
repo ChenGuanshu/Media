@@ -43,6 +43,9 @@ class FfmpegPlayerActivity : ComponentActivity() {
             Thread {
                 Logger.d(TAG,"start decode media")
                 decodeMedia(VIDEO_PATH, surface, surfaceView)
+
+                Logger.d(TAG,"start decode media DONE")
+                surfaceView.stop()
             }.start()
         }
     //        Thread {

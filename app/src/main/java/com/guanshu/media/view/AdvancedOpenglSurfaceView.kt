@@ -1,7 +1,6 @@
 package com.guanshu.media.view
 
 import android.content.Context
-import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
 import android.opengl.GLES20
 import android.os.Handler
@@ -15,18 +14,22 @@ import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.bindFbo
 import com.guanshu.media.opengl.checkGlError
 import com.guanshu.media.opengl.egl.OpenglEnv
+import com.guanshu.media.opengl.fence
+import com.guanshu.media.opengl.filters.OverlayFilter
 import com.guanshu.media.opengl.filters.SingleImageTextureFilter
-import com.guanshu.media.opengl.filters.TextureWithImageFilter
 import com.guanshu.media.opengl.matrixReset
 import com.guanshu.media.opengl.newFbo
 import com.guanshu.media.opengl.newMatrix
 import com.guanshu.media.opengl.newTexture
-import com.guanshu.media.opengl.readToBitmap
 import com.guanshu.media.opengl.unbindFbo
+import com.guanshu.media.opengl.waitFence
 import com.guanshu.media.utils.DefaultSize
 import com.guanshu.media.utils.Logger
+import java.util.LinkedList
 
 private const val TAG = "AdvancedOpenglSurfaceView"
+private const val FPS = 30
+private const val TEXTURE_CACHE_INIT_SIZE = 2
 
 class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
 
@@ -42,28 +45,23 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
     // main open env, render the texture to the surface
     private var mainOpenglEnv: OpenglEnv? = null
     private val mainFilter = SingleImageTextureFilter()
-//    private val mainFilter = SmartTextureFilter()
 
     // offscreen rendering from playback output to fbo
     private var secondOpenglEnv: OpenglEnv? = null
-    private val secondFilter = TextureWithImageFilter()
+    private val secondFilter = OverlayFilter()
     private var fbo: Int = -1
-    private var fboTexture: Int = -1
-    private var fboTextureData: TextureData? = null
-    private var testBitmap: Bitmap? = null
+    // A front/back texture buffer
+    // TODO implement it well
+    private val fboTextureQueue = LinkedList<Pair<TextureData, Long>>()
 
     // For decoding output, built from second opengl ev
     private var surfaceTexture: SurfaceTexture? = null
     private var surface: Surface? = null
     private var textureData: TextureData? = null
 
-    // TODO lock between main/second opengl env
-
     // display surface
     @Volatile
     private var surfaceHolder: SurfaceHolder? = null
-
-    private var error = false
     private val mainHandler = Handler(Looper.getMainLooper())
 
     fun setMediaResolution(size: Size) {
@@ -97,6 +95,7 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
             mainFilter.init()
             secondOpenglEnv!!.initContext(mainOpenglEnv!!.getEglContext()) {
                 Logger.d(TAG, "init second context done")
+                fbo = newFbo()
                 secondFilter.init()
             }
             maybeScheduleRender()
@@ -110,7 +109,7 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
             return
         }
 
-        secondOpenglEnv?.requestSurface(1) {
+        secondOpenglEnv?.requestSurface(num = 1) {
             val textureId = it.first().first
             val st = it.first().second
 
@@ -119,22 +118,36 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
                 if (textData.resolution == DefaultSize) return@setOnFrameAvailableListener
 
                 secondOpenglEnv?.requestRender {
+                    // second渲染线程，负责把特效&source提前做离屏渲染
+                    maybeSetupFboTextureQueue(textData.resolution)
+
                     textData.matrix.matrixReset()
                     surfaceText.updateTexImage()
                     surfaceText.getTransformMatrix(textData.matrix)
+                    val pts = surfaceText.timestamp
 
-                    maybeBindFbo(textData.resolution)
                     checkGlError("before second filter render")
-                    GLES20.glViewport(0, 0, textData.resolution.width, textData.resolution.height)
+                    GLES20.glViewport(
+                        0,
+                        0,
+                        textData.resolution.width,
+                        textData.resolution.height
+                    )
+
+                    val (fboTexture, _) = synchronized(fboTextureQueue) { fboTextureQueue.poll()!! }
+                    secondFilter.onBeforeDraw = {
+                        checkGlError("before second filter maybeBindFbo")
+                        bindFbo(fbo, fboTexture.textureId)
+                        checkGlError("after second filter maybeBindFbo")
+                    }
                     secondFilter.render(listOf(textData), textData.resolution)
                     checkGlError("after second filter render")
-
-                    // TODO just a test code for debugging purpose
-                    if (testBitmap == null && false) {
-                        testBitmap = readToBitmap(textData.resolution)
-                        Logger.d(TAG, "dump test bitmap")
-                    }
                     unbindFbo()
+
+                    val glFence = fence()
+                    GLES20.glFlush()
+                    glFence.waitFence()
+                    synchronized(fboTextureQueue) { fboTextureQueue.addLast(Pair(fboTexture, pts)) }
                 }
             }
 
@@ -147,17 +160,34 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
         }
     }
 
-    private fun maybeBindFbo(resolution: Size) {
-        if (fbo == -1) fbo = newFbo()
-        if (fboTexture == -1) fboTexture = newTexture(
-            GLES20.GL_TEXTURE_2D,
-            resolution.width,
-            resolution.height
-        )
-        if (fboTextureData == null) fboTextureData =
-            TextureData(fboTexture, newMatrix(), resolution, GLES20.GL_TEXTURE_2D)
+    fun stop() {
+        mainHandler.removeCallbacksAndMessages(null)
+    }
 
-        bindFbo(fbo, fboTexture)
+    private fun maybeSetupFboTextureQueue(resolution: Size) {
+        if (fboTextureQueue.isEmpty()) {
+            synchronized(fboTextureQueue){
+                val textures = IntArray(TEXTURE_CACHE_INIT_SIZE)
+                newTexture(
+                    textures,
+                    GLES20.GL_TEXTURE_2D,
+                    resolution.width,
+                    resolution.height
+                )
+                textures.forEach {
+                    fboTextureQueue.add(
+                        Pair(
+                            TextureData(
+                                it,
+                                newMatrix(),
+                                resolution,
+                                GLES20.GL_TEXTURE_2D
+                            ), -1
+                        )
+                    )
+                }
+            }
+        }
     }
 
     fun release() {
@@ -169,32 +199,46 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
     }
 
     private fun maybeScheduleRender() {
-        val fps = 30
-        val delayMs = 1000L / fps
-
+        val delayMs = 1000L / FPS
+        mainHandler.removeCallbacksAndMessages(null)
         mainHandler.postDelayed({
-
+            // 主渲染线程，负责上屏
             mainOpenglEnv?.requestRender {
-                if (error) return@requestRender
                 if (viewResolution == DefaultSize) return@requestRender
-                val textData = fboTextureData ?: return@requestRender
+                if (surfaceHolder == null) return@requestRender
 
-                try {
-                    checkGlError("before main filter render")
-                    textData.matrix.matrixReset()
-                    GLES20.glViewport(0, 0, viewResolution.width, viewResolution.height)
-                    mainFilter.render(
-                        listOf(textData),
-                        viewResolution,
-                    )
-                    checkGlError("after main filter render")
-                    mainOpenglEnv?.swapBuffer()
-                } catch (e: Exception) {
-                    error = true
-                    Logger.e(TAG, "draw error", e)
+                val (fboTexture, pts) = synchronized(fboTextureQueue) {
+                    fboTextureQueue.removeLastOrNull() ?: return@requestRender
+                }
+                if (pts == -1L) return@requestRender
+
+                checkGlError("before main filter render")
+                fboTexture.matrix.matrixReset()
+                GLES20.glViewport(0, 0, viewResolution.width, viewResolution.height)
+                mainFilter.render(
+                    listOf(fboTexture),
+                    viewResolution,
+                )
+                checkGlError("after main filter render")
+                mainOpenglEnv?.swapBuffer()
+
+                val glFence = fence()
+                GLES20.glFlush()
+                glFence.waitFence()
+
+                // TODO should be elegant to insert into the correct position
+                synchronized(fboTextureQueue) {
+                    if (fboTextureQueue.isEmpty()) {
+                        fboTextureQueue.addLast(Pair(fboTexture, pts))
+                    } else {
+                        val (a, b) = fboTextureQueue.first
+                        if (pts > b)
+                            fboTextureQueue.addLast(Pair(fboTexture, pts))
+                        else
+                            fboTextureQueue.addFirst(Pair(fboTexture, pts))
+                    }
                 }
             }
-
             maybeScheduleRender()
 
         }, delayMs)
@@ -208,11 +252,13 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
 
     private fun maybeReleaseEglSurface() {
         Logger.d(TAG, "maybeReleaseEglSurface")
+        mainHandler.removeCallbacksAndMessages(null)
         mainOpenglEnv?.releaseEglSurface()
     }
 
     override fun surfaceCreated(holder: SurfaceHolder) {
         Logger.d(TAG, "surfaceCreated: $holder")
+        maybeScheduleRender()
         if (holder == surfaceHolder) {
             return
         }

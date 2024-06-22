@@ -3,16 +3,25 @@ package com.guanshu.media.opengl
 import android.graphics.Bitmap
 import android.opengl.GLES11Ext
 import android.opengl.GLES20
+import android.opengl.GLES30
 import android.opengl.Matrix
 import android.util.Size
 import com.guanshu.media.utils.Logger
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.nio.FloatBuffer
+import java.nio.IntBuffer
 
 private const val TAG = "OpenGL"
 
 const val FLOAT_SIZE_BYTES = 4
 const val INT_SIZE_BYTES = 4
+
+fun fence() = GLES30.glFenceSync(GLES30.GL_SYNC_GPU_COMMANDS_COMPLETE, 0)
+fun Long.waitFence() {
+    GLES30.glWaitSync(this, 0, GLES30.GL_TIMEOUT_IGNORED)
+    GLES30.glDeleteSync(this)
+}
 
 fun newMatrix(): FloatArray {
     val ret = FloatArray(16)
@@ -127,10 +136,12 @@ fun newTexture(
     height: Int = -1,
 ) {
     Logger.d(TAG, "newTexture, size=${textures.size}, type=$textureTarget, size=$width * $height")
+    checkGlError("before glGenTextures")
     GLES20.glGenTextures(textures.size, textures, 0)
+    checkGlError("glGenTextures ${textures.contentToString()}")
     textures.forEach { textureId ->
         GLES20.glBindTexture(textureTarget, textureId)
-        checkGlError("glBindTexture mTextureID")
+        checkGlError("glBindTexture $textureId")
 
         if (textureTarget == GLES20.GL_TEXTURE_2D && width != -1) {
             Logger.d(TAG, "newTexture,glTexImage2D from $width")
@@ -184,7 +195,6 @@ fun bindFbo(fbo: Int, texture: Int) {
     GLES20.glFramebufferTexture2D(
         GLES20.GL_FRAMEBUFFER,
         GLES20.GL_COLOR_ATTACHMENT0,
-        // TODO
         GLES20.GL_TEXTURE_2D,
         texture,
         0,
@@ -193,4 +203,20 @@ fun bindFbo(fbo: Int, texture: Int) {
 
 fun unbindFbo() {
     GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, GLES20.GL_NONE)
+}
+
+fun FloatArray.toFloatBuffer(): FloatBuffer {
+    val vertexBuffer = ByteBuffer.allocateDirect(this.size * Float.SIZE_BYTES)
+        .order(ByteOrder.nativeOrder())
+        .asFloatBuffer()
+    vertexBuffer.put(this).position(0)
+    return vertexBuffer
+}
+
+fun IntArray.toIntBuffer(): IntBuffer {
+    val vertexBuffer = ByteBuffer.allocateDirect(this.size * Int.SIZE_BYTES)
+        .order(ByteOrder.nativeOrder())
+        .asIntBuffer()
+    vertexBuffer.put(this).position(0)
+    return vertexBuffer
 }
