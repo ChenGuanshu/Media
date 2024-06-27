@@ -4,6 +4,7 @@
 #include <android/log.h>
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
+#include "Utils.h"
 
 extern "C" {
 #include "libavutil/time.h"
@@ -16,13 +17,6 @@ extern "C" {
 #include "libavutil/avutil.h"
 #include "libswresample/swresample.h"
 #include "libavutil/avstring.h"
-}
-
-void LOGD(const char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-    __android_log_print(ANDROID_LOG_DEBUG, "QWER-native", fmt, args);
-    va_end(args);
 }
 
 std::string CodecInfo(const AVCodec *codec) {
@@ -347,7 +341,7 @@ Java_com_guanshu_media_FfmpegPlayerActivity_decodeMedia(
         jobject surface,
         jobject surfaceView
 ) {
-    LOGD("native decode media");
+    LOGD("native decode media start");
     mediaStop = false;
     const char *src = env->GetStringUTFChars(file, 0);
     AVFormatContext *formatCxt = nullptr;
@@ -422,7 +416,7 @@ Java_com_guanshu_media_FfmpegPlayerActivity_decodeMedia(
 
     videoWidth = codecCxt->width;
     videoHeight = codecCxt->height;
-    LOGD("Resolution =%d,%d", videoWidth, videoHeight);
+    LOGD("Resolution = [%d * %d]", videoWidth, videoHeight);
 
     nativeWindow = ANativeWindow_fromSurface(env, surface);
     ANativeWindow_setBuffersGeometry(nativeWindow, videoWidth, videoHeight,

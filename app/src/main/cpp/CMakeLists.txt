@@ -18,6 +18,11 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++11")
 #指定头文件路径
 include_directories(${CMAKE_SOURCE_DIR}/include)
 
+# 定义包含源文件的目录
+set(SOURCE_DIR "src")
+# 使用 file(GLOB ...) 命令收集该目录下的所有 .cpp 文件
+file(GLOB SOURCE_FILES "${SOURCE_DIR}/*.cpp")
+
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
 # You can define multiple libraries, and CMake builds them for you.
@@ -32,8 +37,8 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 # for GameActivity/NativeActivity derived applications, the same library name must be
 # used in the AndroidManifest.xml file.
 add_library(${CMAKE_PROJECT_NAME} SHARED
-        # List C/C++ source files with relative paths to this CMakeLists.txt.
-        media.cpp
+        ${SOURCE_FILES}
+#        media.cpp hellocpp.cpp Utils.cpp
 )
 
 set(libs "${CMAKE_SOURCE_DIR}/libs")
