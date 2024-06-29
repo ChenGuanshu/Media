@@ -31,8 +31,6 @@ class SingleTextureFilter : BaseFilter(ExternalTextureProgram()) {
 
     private lateinit var vertexBuffer: VertexBuffer
     private val mvpMatrix = newMatrix()
-
-    // TODO FIXME
     private val exProgram = program as ExternalTextureProgram
 
     override fun init() {

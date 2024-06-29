@@ -6,9 +6,6 @@ import android.media.AudioManager
 import android.media.AudioTrack
 import android.os.Bundle
 import android.view.Surface
-import android.view.SurfaceHolder
-import android.view.SurfaceView
-import android.widget.TextView
 import androidx.activity.ComponentActivity
 import com.guanshu.media.utils.Logger
 import com.guanshu.media.utils.MP3_PATH
@@ -29,7 +26,7 @@ class FfmpegPlayerActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        Logger.i(TAG, "onCreate")
+        Logger.i(TAG, "onCreate: ${stringFromJNI2()}")
         setContentView(R.layout.activity_ffmpeg_player)
         surfaceView = findViewById(R.id.surface_ffmpeg)
         surfaceView.init()
@@ -39,22 +36,15 @@ class FfmpegPlayerActivity : ComponentActivity() {
         super.onResume()
         Logger.i(TAG, "onResume")
         surfaceView.requestSurface { surface ->
-            Logger.d(TAG,"requestSurface result: $surface")
+            Logger.d(TAG, "requestSurface result: $surface")
             Thread {
-                Logger.d(TAG,"start decode media")
+                Logger.d(TAG, "start decode media")
                 decodeMedia(VIDEO_PATH, surface, surfaceView)
-
-                Logger.d(TAG,"start decode media DONE")
+                Logger.d(TAG, "start decode media DONE")
                 surfaceView.stop()
             }.start()
         }
-    //        Thread {
-//            val file = File(MP3_PATH)
-//            Logger.d(TAG, "file: $MP3_PATH")
-//            Logger.d(TAG, "file exist: ${file.exists()}, ${file.canRead()}")
-//            val decodeRet = decodeAudio(MP3_PATH)
-//            Logger.d(TAG, "decodeRet = $decodeRet")
-//        }.start()
+
     }
 
     override fun onPause() {
@@ -67,6 +57,8 @@ class FfmpegPlayerActivity : ComponentActivity() {
         super.onDestroy()
         surfaceView.release()
     }
+
+    private external fun stringFromJNI2(): String
 
     private external fun loadFfmpegInfo(): String
 
@@ -81,6 +73,16 @@ class FfmpegPlayerActivity : ComponentActivity() {
     ): Int
 
     private external fun stopMedia()
+
+    private fun playbackAudio() {
+        Thread {
+            val file = File(MP3_PATH)
+            Logger.d(TAG, "file: $MP3_PATH")
+            Logger.d(TAG, "file exist: ${file.exists()}, ${file.canRead()}")
+            val decodeRet = decodeAudio(MP3_PATH)
+            Logger.d(TAG, "decodeRet = $decodeRet")
+        }.start()
+    }
 
     private fun onDataReceive(data: ByteArray) {
         maybeInitAudioTrack()

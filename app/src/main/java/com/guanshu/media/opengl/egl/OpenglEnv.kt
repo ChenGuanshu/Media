@@ -14,7 +14,7 @@ class OpenglEnv(name: String) {
 
     private val TAG = "OpenglEnv#$name"
 
-    private val egl = EglManager()
+    private val egl: EglManagerInterface = EglManager()
     private lateinit var glThread: HandlerThread
     private lateinit var glHandler: Handler
 

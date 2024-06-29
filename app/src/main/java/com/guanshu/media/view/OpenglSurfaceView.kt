@@ -15,6 +15,8 @@ import com.guanshu.media.opengl.Renderer
 import com.guanshu.media.opengl.RendererFactory
 import com.guanshu.media.opengl.TextureData
 import com.guanshu.media.opengl.egl.EglManager
+import com.guanshu.media.opengl.egl.EglManagerInterface
+import com.guanshu.media.opengl.egl.EglManagerNative
 import com.guanshu.media.opengl.filters.DefaultRenderGraph
 import com.guanshu.media.opengl.newTexture
 import com.guanshu.media.utils.DefaultSize
@@ -34,7 +36,9 @@ class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
         0,
     )
 
-    private val egl = EglManager()
+    private val egl: EglManagerInterface = EglManagerNative()
+//    private val egl: EglManagerInterface = EglManager()
+
     private var glThread: HandlerThread? = null
     private var glHandler: Handler? = null
 
@@ -99,7 +103,7 @@ class OpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
 
         glHandler = Handler(glThread.looper)
         glHandler?.post {
-            Logger.d(TAG, "init run")
+            Logger.d(TAG, "init run ${Thread.currentThread()}")
             egl.init()
             maybeInitEglSurface()
 
