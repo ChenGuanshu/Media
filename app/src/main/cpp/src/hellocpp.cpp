@@ -2,6 +2,7 @@
 #include <string>
 #include "Utils.h"
 #include "Entity.h"
+#include "EglCore.h"
 
 jstring stringFromJNI2(JNIEnv *env, jobject instance) {
     LOGD("stringFromJNI2 %d, %s", 1, "oh!");

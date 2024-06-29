@@ -135,16 +135,20 @@ fun newTexture(
     width: Int = -1,
     height: Int = -1,
 ) {
-    Logger.d(TAG, "newTexture, size=${textures.size}, type=$textureTarget, size=$width * $height")
     checkGlError("before glGenTextures")
     GLES20.glGenTextures(textures.size, textures, 0)
     checkGlError("glGenTextures ${textures.contentToString()}")
+
+    Logger.d(
+        TAG,
+        "newTexture, textures=${textures.contentToString()}, type=$textureTarget, size=$width*$height"
+    )
+
     textures.forEach { textureId ->
         GLES20.glBindTexture(textureTarget, textureId)
         checkGlError("glBindTexture $textureId")
 
         if (textureTarget == GLES20.GL_TEXTURE_2D && width != -1) {
-            Logger.d(TAG, "newTexture,glTexImage2D from $width")
             GLES20.glTexImage2D(
                 GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, width, height,
                 0, GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, null
