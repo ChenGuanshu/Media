@@ -5,9 +5,11 @@
 
 jstring stringFromJNI2(JNIEnv *env, jobject instance) {
     LOGD("stringFromJNI2 %d, %s", 1, "oh!");
-    std::string hello = "Hello from C++";
-    Entity entity;
-    auto str = entity.toString();
+
+    std::string name = "test";
+    Entity entity(name);
+    std::string str = entity.toString();
+
     return env->NewStringUTF(str.c_str());
 }
 
@@ -21,7 +23,9 @@ static const JNINativeMethod nativeMethod[] = {
 };
 
 // 类库加载时自动调用
-JNIEXPORT jint JNICALL JNI_OnLoad(JavaVM *vm, void *reversed) {
+JNIEXPORT jint
+
+JNICALL JNI_OnLoad(JavaVM *vm, void *reversed) {
     JNIEnv *env = NULL;
     // 初始化JNIEnv
     if (vm->GetEnv(reinterpret_cast<void **>(&env), JNI_VERSION_1_6) != JNI_OK) {

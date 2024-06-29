@@ -11,7 +11,7 @@ import com.guanshu.media.utils.Logger
 
 private const val TAG = "EglManager"
 
-class EglManager {
+class EglManager : EglManagerInterface {
 
     private lateinit var eglDisplay: EGLDisplay
     private lateinit var eglContext: EGLContext
@@ -19,13 +19,13 @@ class EglManager {
 
     private var eglSurface: EGLSurface? = null
 
-    fun getEglContext() = eglContext
+    override fun getEglContext() = eglContext
 
-    fun init(sharedEglContext: EGLContext? = null) {
+    override fun init(sharedEglContext: EGLContext?) {
         eglDisplay = EGL14.eglGetDisplay(EGL14.EGL_DEFAULT_DISPLAY)
 
         if (eglDisplay == EGL14.EGL_NO_DISPLAY) {
-            throw RuntimeException("eglGetDisplay failed");
+            throw RuntimeException("eglGetDisplay failed")
         }
 
         val version = IntArray(2)
@@ -80,7 +80,7 @@ class EglManager {
     }
 
     // Surface/SurfaceTexture
-    fun initEglSurface(surface: Any) {
+    override fun initEglSurface(surface: Any) {
         if (eglSurface != null) {
             Logger.w(TAG, "initEglSurface: already a surface")
             return
@@ -99,7 +99,7 @@ class EglManager {
         Logger.d(TAG, "initEglSurface, $eglSurface")
     }
 
-    fun makeEglCurrent() {
+    override fun makeEglCurrent() {
         // 绑定EGL上下文和表面
         if (!EGL14.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
             throw RuntimeException("Unable to make EGL context and surface current")
@@ -107,7 +107,7 @@ class EglManager {
         Logger.d(TAG, "makeEglCurrent")
     }
 
-    fun makeUnEglCurrent() {
+    override fun makeUnEglCurrent() {
         if (!EGL14.eglMakeCurrent(
                 eglDisplay,
                 EGL14.EGL_NO_SURFACE,
@@ -120,7 +120,7 @@ class EglManager {
         Logger.d(TAG, "makeUnEglCurrent")
     }
 
-    fun swapBuffer() {
+    override fun swapBuffer() {
         if (eglSurface == null) {
             Logger.e(TAG, "swapBuffer: eglSurface is null")
             return
@@ -132,7 +132,7 @@ class EglManager {
         }
     }
 
-    fun releaseEglSurface() {
+    override fun releaseEglSurface() {
         if (eglSurface != null) {
             makeUnEglCurrent()
             EGL14.eglDestroySurface(eglDisplay, eglSurface)
@@ -141,7 +141,7 @@ class EglManager {
         }
     }
 
-    fun release() {
+    override fun release() {
         Logger.d(TAG, "release $eglDisplay, $eglContext")
         releaseEglSurface()
         EGL14.eglDestroyContext(eglDisplay, eglContext)
