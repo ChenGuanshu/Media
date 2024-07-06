@@ -61,7 +61,9 @@ class ImagePlayer {
     }
 
     fun seek(index: Int, surface: Surface, resolution: Size) {
-        Logger.i(TAG,"seek $index, $surface, $resolution")
+        Logger.i(TAG, "seek $index, $surface, $resolution")
+
+        val start = System.currentTimeMillis()
         glHandler.post {
             val eglSurface = eglSurfaceMap.getOrPut(surface) {
                 eglManager.initEglSurface(surface)
@@ -72,11 +74,13 @@ class ImagePlayer {
             GLES20.glViewport(0, 0, resolution.width, resolution.height)
             textureRender.render(listOf(texture), resolution)
             eglManager.swapBuffer()
+
+            Logger.v(TAG, "seek cost ${System.currentTimeMillis() - start}")
         }
     }
 
     fun releaseSurface(surface: Surface?) {
-        Logger.i(TAG,"releaseSurface $surface")
+        Logger.i(TAG, "releaseSurface $surface")
         if (surface == null) return
         glHandler.post {
             val surfaceInterface = eglSurfaceMap[surface] ?: return@post
