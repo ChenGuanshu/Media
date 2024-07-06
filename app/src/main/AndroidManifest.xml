@@ -48,6 +48,7 @@
         <activity android:name=".CameraAndPlaybackGlSurface2Activity" />
         <activity android:name=".PlaybackSharedEglActivity" />
         <activity android:name=".FfmpegPlayerActivity" />
+        <activity android:name=".PlaybackImageActivity" />
 
     </application>
 

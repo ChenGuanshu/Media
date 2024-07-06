@@ -65,5 +65,10 @@ class MainActivity : ComponentActivity() {
             val intent = Intent(this, FfmpegPlayerActivity::class.java)
             startActivity(intent)
         }
+
+        findViewById<View>(R.id.playback_image).setOnClickListener {
+            val intent = Intent(this, PlaybackImageActivity::class.java)
+            startActivity(intent)
+        }
     }
 }

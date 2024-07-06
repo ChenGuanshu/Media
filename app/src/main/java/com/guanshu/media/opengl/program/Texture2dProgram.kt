@@ -1,11 +1,11 @@
 package com.guanshu.media.opengl.program
 
-import com.guanshu.media.opengl.ImageTextureProgram
+import com.guanshu.media.opengl.ImageTextureWithAlphaProgram
 import com.guanshu.media.opengl.abstraction.Program
 
 class Texture2dProgram : Program(
-    ImageTextureProgram.VERTEX_SHADER,
-    ImageTextureProgram.FRAGMENT_SHADER,
+    ImageTextureWithAlphaProgram.VERTEX_SHADER,
+    ImageTextureWithAlphaProgram.FRAGMENT_SHADER,
 ) {
 
     val aPositionHandle by lazy { getAttrib("aPosition") }

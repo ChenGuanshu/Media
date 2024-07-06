@@ -62,7 +62,7 @@ class Sampler2DTexture(
         }
 
         fun fromFilePath(filePath: String): Sampler2DTexture {
-            val stream = this::class.java.getResourceAsStream("/res/drawable/pikachu.png")
+            val stream = this::class.java.getResourceAsStream(filePath)
             val bitmap = BitmapFactory.decodeStream(stream)
             return fromBitmap(bitmap)
         }

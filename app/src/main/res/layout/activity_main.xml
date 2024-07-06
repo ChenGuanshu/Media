@@ -118,6 +118,17 @@
             android:text="playback_ffmpeg"
             android:textSize="20sp" />
 
+        <TextView
+            android:id="@+id/playback_image"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="20dp"
+            android:background="@color/purple_200"
+            android:gravity="center"
+            android:text="playback_image"
+            android:textSize="20sp" />
+
     </LinearLayout>
 
 </ScrollView>

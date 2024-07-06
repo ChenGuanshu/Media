@@ -66,7 +66,7 @@ Java_com_guanshu_media_opengl_egl_EglManagerNative_nativeReleaseEglSurface(
         jobject thiz,
         jlong native_egl,
         jlong native_egl_surface) {
-    EglCore *eglCore = reinterpret_cast<EglCore *>(native_egl);
+    auto *eglCore = reinterpret_cast<EglCore *>(native_egl);
     auto eglSurface = reinterpret_cast<EGLSurface *>(native_egl_surface);
     eglCore->releaseSurface(eglSurface);
 }
@@ -77,7 +77,7 @@ Java_com_guanshu_media_opengl_egl_EglManagerNative_nativeRelease(
         JNIEnv *env,
         jobject thiz,
         jlong native_egl) {
-    EglCore *eglCore = reinterpret_cast<EglCore *>(native_egl);
+    auto *eglCore = reinterpret_cast<EglCore *>(native_egl);
     eglCore->release();
 }
 
@@ -87,7 +87,7 @@ Java_com_guanshu_media_opengl_egl_EglManagerNative_nativeGetEglContext(
         JNIEnv *env,
         jobject thiz,
         jlong native_egl) {
-    EglCore *eglCore = reinterpret_cast<EglCore *>(native_egl);
+    auto *eglCore = reinterpret_cast<EglCore *>(native_egl);
     auto eglContext = eglCore->getEGLContext();
     return reinterpret_cast<jlong>(eglContext);
 }

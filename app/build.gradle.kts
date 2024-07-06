@@ -82,4 +82,5 @@ dependencies {
 
     implementation("com.google.android.exoplayer:exoplayer:2.19.1")
     implementation("io.reactivex.rxjava3:rxjava:3.1.8")
+    implementation("androidx.viewpager2:viewpager2:1.1.0")
 }
