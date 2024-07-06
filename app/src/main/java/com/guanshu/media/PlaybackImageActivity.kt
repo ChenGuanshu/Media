@@ -3,6 +3,8 @@ package com.guanshu.media
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.view.SurfaceView
+import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams
 import android.widget.ImageView
@@ -39,53 +41,36 @@ class PlaybackImageActivity : ComponentActivity() {
         adapter = ImageAdapter()
         viewPager.adapter = adapter
         viewPager.offscreenPageLimit = 1
-
-//        imagePlayer = ImagePlayer()
-//        imagePlayer.init()
-    }
-
-    override fun onResume() {
-        super.onResume()
-    }
-
-    override fun onPause() {
-        super.onPause()
+        imagePlayer = ImagePlayer()
+        imagePlayer.init()
+        imagePlayer.setDataSource(imageSources)
     }
 
     override fun onDestroy() {
         super.onDestroy()
-//        imagePlayer.release()
+        imagePlayer.release()
     }
 
     private inner class ImageAdapter : RecyclerView.Adapter<ImageAdapter.ImageViewHolder>() {
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImageViewHolder {
             Logger.v(TAG, "createViewHolder")
-            val imageView = ImageView(parent.context)
+            val surfaceView = SurfaceView(parent.context)
             val layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
-            imageView.layoutParams = layoutParams
-//            layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
-//            layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT
-//            parent.addView(imageView)
-            return ImageViewHolder(imageView)
+            surfaceView.layoutParams = layoutParams
+            return ImageViewHolder(surfaceView)
         }
 
         override fun onBindViewHolder(holder: ImageViewHolder, position: Int) {
-            Logger.v(TAG, "onBindViewHolder $position")
-            val path = imageSources[position].filePath
-            var bitmap = bitmapCache[path]?.get()
-            if (bitmap == null) {
-                bitmap = BitmapFactory
-                    .decodeStream(javaClass.getResourceAsStream(path))
-                bitmapCache[path] = WeakReference(bitmap)
-            }
+            val start = System.currentTimeMillis()
+//            val
 
-            (holder.itemView as ImageView).setImageBitmap(bitmap)
+//            Logger.v(TAG, "onBindViewHolder $position, cost:${System.currentTimeMillis() - start}")
         }
 
         override fun getItemCount(): Int {
             return imageSources.size
         }
 
-        private inner class ImageViewHolder(itemView: ImageView) : RecyclerView.ViewHolder(itemView)
+        private inner class ImageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
     }
 }

@@ -17,7 +17,8 @@ class EglManager : EglManagerInterface {
     private lateinit var eglContext: EGLContext
     private lateinit var eglConfig: EGLConfig
 
-    private var eglSurface: EGLSurface? = null
+    private var currentEglSurface: EGLSurface? = null
+    private val eglSurfaceMap = hashMapOf<EglSurfaceInterface, EGLSurface>()
 
     override fun getEglContext() = eglContext
 
@@ -80,12 +81,8 @@ class EglManager : EglManagerInterface {
     }
 
     // Surface/SurfaceTexture
-    override fun initEglSurface(surface: Any) {
-        if (eglSurface != null) {
-            Logger.w(TAG, "initEglSurface: already a surface")
-            return
-        }
-        eglSurface = EGL14.eglCreateWindowSurface(
+    override fun initEglSurface(surface: Any): EglSurfaceInterface {
+        val eglSurface = EGL14.eglCreateWindowSurface(
             eglDisplay,
             eglConfig,
             surface,
@@ -97,10 +94,24 @@ class EglManager : EglManagerInterface {
         }
 
         Logger.d(TAG, "initEglSurface, $eglSurface")
+
+        val eglSurfaceDelegate = EglSurfaceDelegate()
+        eglSurfaceMap[eglSurfaceDelegate] = eglSurface
+        currentEglSurface = eglSurface
+        return eglSurfaceDelegate
     }
 
-    override fun makeEglCurrent() {
-        // 绑定EGL上下文和表面
+    override fun makeEglCurrent(eglSurfaceInterface: EglSurfaceInterface?) {
+        val eglSurface = if (eglSurfaceInterface == null) {
+            currentEglSurface
+        } else {
+            eglSurfaceMap[eglSurfaceInterface]
+        }
+        currentEglSurface = eglSurface
+        if (eglSurface == null) {
+            throw RuntimeException("Unable to find eglSurface from $eglSurfaceInterface")
+        }
+
         if (!EGL14.eglMakeCurrent(eglDisplay, eglSurface, eglSurface, eglContext)) {
             throw RuntimeException("Unable to make EGL context and surface current")
         }
@@ -121,29 +132,33 @@ class EglManager : EglManagerInterface {
     }
 
     override fun swapBuffer() {
-        if (eglSurface == null) {
+        if (currentEglSurface == null) {
             Logger.e(TAG, "swapBuffer: eglSurface is null")
             return
         }
 
-        if (!EGL14.eglSwapBuffers(eglDisplay, eglSurface)) {
+        if (!EGL14.eglSwapBuffers(eglDisplay, currentEglSurface)) {
             val error = EGL14.eglGetError()
             Logger.e(TAG, "swapBuffer failed, error =$error")
         }
     }
 
     override fun releaseEglSurface() {
-        if (eglSurface != null) {
-            makeUnEglCurrent()
-            EGL14.eglDestroySurface(eglDisplay, eglSurface)
-            eglSurface = null
-            Logger.d(TAG, "releaseEglSurface")
-        }
+        if (currentEglSurface == null) return
+
+        Logger.d(TAG, "releaseEglSurface")
+        makeUnEglCurrent()
+        EGL14.eglDestroySurface(eglDisplay, currentEglSurface)
+        currentEglSurface = null
     }
 
     override fun release() {
         Logger.d(TAG, "release $eglDisplay, $eglContext")
-        releaseEglSurface()
+        eglSurfaceMap.values.forEach { eglSurface ->
+            EGL14.eglDestroySurface(eglDisplay, eglSurface)
+        }
+        eglSurfaceMap.clear()
+
         EGL14.eglDestroyContext(eglDisplay, eglContext)
         EGL14.eglTerminate(eglDisplay)
     }

@@ -12,14 +12,11 @@ class EglManagerNative : EglManagerInterface {
     }
 
     private var nativeEgl: Long = -1
-    private var nativeEglSurface: Long = -1
+    private var currentNativeEglSurface: Long = -1
+    private val eglSurfaceMap = hashMapOf<EglSurfaceInterface, Long>()
 
     private fun checkEgl() {
         if (nativeEgl == -1L) throw IllegalArgumentException("egl not init")
-    }
-
-    private fun checkEglSurface() {
-        if (nativeEglSurface == -1L) throw IllegalArgumentException("eglSurface not init")
     }
 
     override fun getEglContext(): EGLContext {
@@ -32,17 +29,30 @@ class EglManagerNative : EglManagerInterface {
         Logger.d(TAG, "init $nativeEgl")
     }
 
-    override fun initEglSurface(surface: Any) {
+    override fun initEglSurface(surface: Any): EglSurfaceInterface {
         checkEgl()
-        nativeEglSurface = nativeInitEglSurface(nativeEgl, surface)
+        val nativeEglSurface = nativeInitEglSurface(nativeEgl, surface)
+        val delegate = EglSurfaceDelegate()
         Logger.d(TAG, "initEglSurface $nativeEgl")
+        eglSurfaceMap[delegate] = nativeEglSurface
+        currentNativeEglSurface = nativeEglSurface
+        return delegate
     }
 
-    override fun makeEglCurrent() {
+    override fun makeEglCurrent(eglSurfaceInterface: EglSurfaceInterface?) {
         checkEgl()
-        checkEglSurface()
-        nativeMakeEglCurrent(nativeEgl, nativeEglSurface)
-        Logger.d(TAG, "makeEglCurrent $nativeEgl, $nativeEglSurface")
+        val eglSurface = if (eglSurfaceInterface == null) {
+            currentNativeEglSurface
+        } else {
+            eglSurfaceMap[eglSurfaceInterface] ?: -1L
+        }
+        if (eglSurface == -1L) {
+            throw RuntimeException("Unable to find native eglSurface from $eglSurfaceInterface")
+        }
+        currentNativeEglSurface = eglSurface
+
+        nativeMakeEglCurrent(nativeEgl, eglSurface)
+        Logger.d(TAG, "makeEglCurrent $nativeEgl, $currentNativeEglSurface")
     }
 
     override fun makeUnEglCurrent() {
@@ -53,21 +63,36 @@ class EglManagerNative : EglManagerInterface {
 
     override fun swapBuffer() {
         checkEgl()
-        checkEglSurface()
-        nativeSwapBuffer(nativeEgl, nativeEglSurface)
+        if (currentNativeEglSurface == -1L) {
+            throw RuntimeException("currentNativeEglSurface not set")
+        }
+        nativeSwapBuffer(nativeEgl, currentNativeEglSurface)
     }
 
     override fun releaseEglSurface() {
         if (nativeEgl == -1L) return
-        if (nativeEglSurface == -1L) return
+        if (currentNativeEglSurface == -1L) return
 
-        Logger.d(TAG, "releaseEglSurface $nativeEgl, $nativeEglSurface")
-        nativeReleaseEglSurface(nativeEgl, nativeEglSurface)
-        nativeEglSurface = -1
+        Logger.d(TAG, "releaseEglSurface $nativeEgl, $currentNativeEglSurface")
+        makeUnEglCurrent()
+        nativeReleaseEglSurface(nativeEgl, currentNativeEglSurface)
+        val iterator = eglSurfaceMap.entries.iterator()
+        while (iterator.hasNext()) {
+            val next = iterator.next()
+            if (next.value == currentNativeEglSurface) iterator.remove()
+        }
+
+        currentNativeEglSurface = -1L
     }
 
     override fun release() {
         if (nativeEgl == -1L) return
+        eglSurfaceMap.values.forEach { nativeEglSurface ->
+            if (nativeEglSurface != -1L) {
+                nativeReleaseEglSurface(nativeEgl, nativeEglSurface)
+            }
+        }
+        eglSurfaceMap.clear()
 
         Logger.d(TAG, "release $nativeEgl")
         nativeRelease(nativeEgl)

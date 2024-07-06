@@ -3,6 +3,8 @@ package com.guanshu.media.imageplayback
 import android.os.Handler
 import android.os.HandlerThread
 import android.view.Surface
+import android.view.SurfaceView
+import com.guanshu.media.opengl.abstraction.Sampler2DTexture
 import com.guanshu.media.opengl.egl.EglManagerInterface
 import com.guanshu.media.opengl.egl.EglManagerNative
 import com.guanshu.media.utils.Logger
@@ -17,7 +19,9 @@ class ImagePlayer {
 
     private val glHandler: Handler
     private val eglManager: EglManagerInterface = EglManagerNative()
+
     private var imageSources: List<ImageSource>? = null
+    private var imageTextures: List<Sampler2DTexture>? = null
 
     init {
         val handlerThread = HandlerThread(TAG)
@@ -36,8 +40,14 @@ class ImagePlayer {
         Logger.d(TAG, "setDataSource $imageSources")
         glHandler.post {
             this.imageSources = imageSources
-            // preload
+            this.imageTextures = imageSources.map {
+                Sampler2DTexture.fromFilePath(it.filePath)
+            }
         }
+    }
+
+    fun seek(index:Int, surface: SurfaceView){
+
     }
 
     fun setSurface(surface: Surface) {
