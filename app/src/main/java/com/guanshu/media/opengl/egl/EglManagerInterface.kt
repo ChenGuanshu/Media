@@ -11,7 +11,7 @@ interface EglManagerInterface {
     fun makeEglCurrent(eglSurfaceInterface: EglSurfaceInterface? = null)
     fun makeUnEglCurrent()
     fun swapBuffer()
-    fun releaseEglSurface()
+    fun releaseEglSurface(surfaceInterface: EglSurfaceInterface? = null)
     fun release()
 }
 

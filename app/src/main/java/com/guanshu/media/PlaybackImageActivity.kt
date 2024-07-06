@@ -1,20 +1,20 @@
 package com.guanshu.media
 
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
+import android.annotation.SuppressLint
 import android.os.Bundle
+import android.util.Size
+import android.view.Surface
+import android.view.SurfaceHolder
 import android.view.SurfaceView
 import android.view.View
 import android.view.ViewGroup
 import android.view.ViewGroup.LayoutParams
-import android.widget.ImageView
 import androidx.activity.ComponentActivity
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.guanshu.media.imageplayback.ImagePlayer
 import com.guanshu.media.imageplayback.ImageSource
 import com.guanshu.media.utils.Logger
-import java.lang.ref.WeakReference
 
 private const val TAG = "PlaybackImageActivity"
 
@@ -32,7 +32,7 @@ class PlaybackImageActivity : ComponentActivity() {
         ImageSource("/res/drawable/pikachu5.jpeg"),
     )
 
-    private val bitmapCache = hashMapOf<String, WeakReference<Bitmap>>()
+    private val surfaceMap = hashMapOf<SurfaceView, SurfaceReference>()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,6 +40,7 @@ class PlaybackImageActivity : ComponentActivity() {
         viewPager = findViewById(R.id.image_playback_view_pager)
         adapter = ImageAdapter()
         viewPager.adapter = adapter
+//        viewPager.offscreenPageLimit = ViewPager2.OFFSCREEN_PAGE_LIMIT_DEFAULT
         viewPager.offscreenPageLimit = 1
         imagePlayer = ImagePlayer()
         imagePlayer.init()
@@ -57,14 +58,45 @@ class PlaybackImageActivity : ComponentActivity() {
             val surfaceView = SurfaceView(parent.context)
             val layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
             surfaceView.layoutParams = layoutParams
+            surfaceView.holder.addCallback(object : SurfaceHolder.Callback {
+                override fun surfaceCreated(holder: SurfaceHolder) =
+                    Logger.d(TAG, "surfaceCreated $holder")
+
+                override fun surfaceChanged(
+                    holder: SurfaceHolder,
+                    format: Int,
+                    width: Int,
+                    height: Int
+                ) {
+                    Logger.d(TAG, "surfaceChanged $holder")
+                    surfaceMap[surfaceView]?.run {
+                        surface = holder.surface
+                        size = Size(width, height)
+                    }
+                    maybeSeek(surfaceView)
+                }
+
+                override fun surfaceDestroyed(holder: SurfaceHolder) {
+                    Logger.d(TAG, "surfaceDestroyed $holder, ${surfaceMap[surfaceView]}")
+                    surfaceMap[surfaceView]?.run {
+                        surface = null
+                        size = null
+//                        position = -1
+                    }
+                    imagePlayer.releaseSurface(holder.surface)
+                }
+            })
+            surfaceMap[surfaceView] = SurfaceReference()
+
             return ImageViewHolder(surfaceView)
         }
 
+        @SuppressLint("CheckResult")
         override fun onBindViewHolder(holder: ImageViewHolder, position: Int) {
-            val start = System.currentTimeMillis()
-//            val
-
-//            Logger.v(TAG, "onBindViewHolder $position, cost:${System.currentTimeMillis() - start}")
+            Logger.d(TAG, "onBindViewHolder $position")
+            val surfaceView = holder.itemView as SurfaceView
+            surfaceMap[surfaceView]?.run { this.position = position }
+            maybeSeek(surfaceView)
         }
 
         override fun getItemCount(): Int {
@@ -73,4 +105,21 @@ class PlaybackImageActivity : ComponentActivity() {
 
         private inner class ImageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView)
     }
+
+    private fun maybeSeek(surfaceView: SurfaceView) {
+        val surfaceReference = surfaceMap[surfaceView] ?: return
+        if (surfaceReference.run { surface == null || size == null || position == -1 }) return
+
+        imagePlayer.seek(
+            surfaceReference.position,
+            surfaceReference.surface!!,
+            surfaceReference.size!!
+        )
+    }
+
+    private data class SurfaceReference(
+        var surface: Surface? = null,
+        var size: Size? = null,
+        var position: Int = -1,
+    )
 }

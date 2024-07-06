@@ -143,13 +143,17 @@ class EglManager : EglManagerInterface {
         }
     }
 
-    override fun releaseEglSurface() {
-        if (currentEglSurface == null) return
+    override fun releaseEglSurface(surfaceInterface: EglSurfaceInterface?) {
+        val eglSurface = if (surfaceInterface == null) {
+            currentEglSurface
+        } else {
+            eglSurfaceMap.remove(surfaceInterface)
+        } ?: return
 
         Logger.d(TAG, "releaseEglSurface")
         makeUnEglCurrent()
-        EGL14.eglDestroySurface(eglDisplay, currentEglSurface)
-        currentEglSurface = null
+        EGL14.eglDestroySurface(eglDisplay, eglSurface)
+        if (currentEglSurface == eglSurface) currentEglSurface = null
     }
 
     override fun release() {

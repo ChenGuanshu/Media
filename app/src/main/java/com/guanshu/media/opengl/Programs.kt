@@ -40,10 +40,10 @@ object ImageTextureProgram {
                 precision mediump float;
                 varying vec2 vTextureCoord;
                 uniform sampler2D sTexture;
-                uniform float alpha;
+//                uniform float alpha;
                 void main() {
                     vec4 color = texture2D(sTexture, vTextureCoord);
-                    color.a = alpha;
+//                    color.a = alpha;
                     gl_FragColor = color;
                 }
                 """

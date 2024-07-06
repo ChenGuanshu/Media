@@ -69,20 +69,26 @@ class EglManagerNative : EglManagerInterface {
         nativeSwapBuffer(nativeEgl, currentNativeEglSurface)
     }
 
-    override fun releaseEglSurface() {
+    override fun releaseEglSurface(surfaceInterface: EglSurfaceInterface?) {
         if (nativeEgl == -1L) return
-        if (currentNativeEglSurface == -1L) return
 
-        Logger.d(TAG, "releaseEglSurface $nativeEgl, $currentNativeEglSurface")
+        val eglSurface = if (surfaceInterface == null) {
+           currentNativeEglSurface
+        } else {
+            eglSurfaceMap.remove(surfaceInterface)
+        } ?: return
+        if (eglSurface == -1L) return
+
+        Logger.d(TAG, "releaseEglSurface $nativeEgl, $eglSurface")
         makeUnEglCurrent()
-        nativeReleaseEglSurface(nativeEgl, currentNativeEglSurface)
+        nativeReleaseEglSurface(nativeEgl, eglSurface)
         val iterator = eglSurfaceMap.entries.iterator()
         while (iterator.hasNext()) {
             val next = iterator.next()
             if (next.value == currentNativeEglSurface) iterator.remove()
         }
 
-        currentNativeEglSurface = -1L
+        if (currentNativeEglSurface == eglSurface) currentNativeEglSurface = -1L
     }
 
     override fun release() {
