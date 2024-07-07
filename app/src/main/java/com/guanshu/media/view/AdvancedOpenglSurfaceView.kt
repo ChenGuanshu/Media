@@ -134,6 +134,7 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
                         textData.resolution.height
                     )
 
+                    // TODO crash here
                     val (fboTexture, _) = synchronized(fboTextureQueue) { fboTextureQueue.poll()!! }
                     secondFilter.onBeforeDraw = {
                         checkGlError("before second filter maybeBindFbo")

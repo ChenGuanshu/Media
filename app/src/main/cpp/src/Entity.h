@@ -2,16 +2,23 @@
 
 #include "Stringable.h"
 
-class Entity : public Stringable {
+class Entity : public Stringable
+{
 private:
-    std::string name;
-    std::string *str_pointer;
-    std::string &str_reference;
+    const std::string name;
+
+    const std::string *str_pointer;
+
+    const std::string &str_reference;
+
     int num;
+
     int num_array[2];
 
 public:
-    Entity(std::string &name);
+    Entity(const std::string &_name);
+
     ~Entity();
+
     std::string toString() const override;
 };

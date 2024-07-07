@@ -19,7 +19,8 @@ extern "C" {
 #include "libavutil/avstring.h"
 }
 
-std::string CodecInfo(const AVCodec *codec) {
+std::string CodecInfo(const AVCodec *codec)
+{
     char ret[200];
     std::string mediaType;
     switch (codec->type) {
@@ -40,7 +41,8 @@ std::string CodecInfo(const AVCodec *codec) {
 
 extern "C"
 JNIEXPORT jstring JNICALL
-Java_com_guanshu_media_FfmpegPlayerActivity_loadFfmpegInfo(JNIEnv *env, jobject thiz) {
+Java_com_guanshu_media_FfmpegPlayerActivity_loadFfmpegInfo(JNIEnv *env, jobject thiz)
+{
     LOGD("start load ffmpeg");
 
     std::string info;
@@ -61,7 +63,8 @@ bool audioStop = false;
 #define AUDIO_INBUF_SIZE 20480
 #define AUDIO_REFILL_THRESH 4096
 
-int decodeAudioV1(JNIEnv *env, jobject thiz, jstring file) {
+int decodeAudioV1(JNIEnv *env, jobject thiz, jstring file)
+{
     const char *src = env->GetStringUTFChars(file, 0);
     AVFormatContext *formatCxt = nullptr;
     AVCodecContext *codecCxt = nullptr;
@@ -121,7 +124,7 @@ int decodeAudioV1(JNIEnv *env, jobject thiz, jstring file) {
         goto fail;
     }
     LOGD("Loaded codec");
-    LOGD(CodecInfo(avCodec).c_str());
+    LOGD("Codec:%s", CodecInfo(avCodec).c_str());
 
     //打开媒体文件，准备读入文件数据流，这里增加了Android 10使用fd打开文件的处理逻辑
     if (av_strstart(src, "file_fd:", &src)) {
@@ -205,7 +208,8 @@ int decodeAudioV1(JNIEnv *env, jobject thiz, jstring file) {
     return rst;
 }
 
-int decodeAudioV2(JNIEnv *env, jobject thiz, jstring file) {
+int decodeAudioV2(JNIEnv *env, jobject thiz, jstring file)
+{
     audioStop = false;
     const char *src = env->GetStringUTFChars(file, 0);
     AVFormatContext *formatCxt = nullptr;
@@ -254,7 +258,7 @@ int decodeAudioV2(JNIEnv *env, jobject thiz, jstring file) {
         goto fail;
     }
     LOGD("Loaded codec");
-    LOGD(CodecInfo(avCodec).c_str());
+    LOGD("Codec:%s", CodecInfo(avCodec).c_str());
 
     /*初始化重采样器，这里swr_alloc_set_opt方法设置重采样后的音频格式为S16,输出声道为立体声，采样频率为44100*/
     swrContext = swr_alloc();
@@ -309,7 +313,8 @@ int decodeAudioV2(JNIEnv *env, jobject thiz, jstring file) {
 
 extern "C"
 JNIEXPORT jint JNICALL
-Java_com_guanshu_media_FfmpegPlayerActivity_decodeAudio(JNIEnv *env, jobject thiz, jstring file) {
+Java_com_guanshu_media_FfmpegPlayerActivity_decodeAudio(JNIEnv *env, jobject thiz, jstring file)
+{
     if (false) {
         LOGD("start decode audio v1");
         return decodeAudioV1(env, thiz, file);
@@ -321,7 +326,8 @@ Java_com_guanshu_media_FfmpegPlayerActivity_decodeAudio(JNIEnv *env, jobject thi
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_guanshu_media_FfmpegPlayerActivity_stopAudio(JNIEnv *env, jobject thiz) {
+Java_com_guanshu_media_FfmpegPlayerActivity_stopAudio(JNIEnv *env, jobject thiz)
+{
     audioStop = true;
 }
 
@@ -329,7 +335,8 @@ bool mediaStop = false;
 
 extern "C"
 JNIEXPORT void JNICALL
-Java_com_guanshu_media_FfmpegPlayerActivity_stopMedia(JNIEnv *env, jobject thiz) {
+Java_com_guanshu_media_FfmpegPlayerActivity_stopMedia(JNIEnv *env, jobject thiz)
+{
     mediaStop = true;
 }
 
@@ -340,7 +347,8 @@ Java_com_guanshu_media_FfmpegPlayerActivity_decodeMedia(
         jstring file,
         jobject surface,
         jobject surfaceView
-) {
+)
+{
     LOGD("native decode media start");
     mediaStop = false;
     const char *src = env->GetStringUTFChars(file, 0);
@@ -412,7 +420,7 @@ Java_com_guanshu_media_FfmpegPlayerActivity_decodeMedia(
         goto fail;
     }
     LOGD("Loaded codec");
-    LOGD(CodecInfo(avCodec).c_str());
+    LOGD("Codec:%s", CodecInfo(avCodec).c_str());
 
     videoWidth = codecCxt->width;
     videoHeight = codecCxt->height;
