@@ -80,6 +80,7 @@ target_link_libraries(
         # List libraries link to the target library
         android
         log
+        jnigraphics
         ${ffmpeg}
         ${EGL-lib}
         ${GLESv2-lib}

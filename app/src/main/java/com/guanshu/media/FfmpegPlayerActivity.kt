@@ -42,6 +42,10 @@ class FfmpegPlayerActivity : ComponentActivity() {
                 decodeMedia(VIDEO_PATH, surface, surfaceView)
                 Logger.d(TAG, "start decode media DONE")
                 surfaceView.stop()
+                surfaceView.readBitmap { bitmap ->
+                    Logger.d(TAG, "readBitmap done $bitmap")
+                }
+
             }.start()
         }
 

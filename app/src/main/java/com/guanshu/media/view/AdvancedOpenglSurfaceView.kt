@@ -1,6 +1,7 @@
 package com.guanshu.media.view
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.graphics.SurfaceTexture
 import android.opengl.GLES20
 import android.os.Handler
@@ -50,6 +51,7 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
     private var secondOpenglEnv: OpenglEnv? = null
     private val secondFilter = OverlayFilter()
     private var fbo: Int = -1
+
     // A front/back texture buffer
     // TODO implement it well
     private val fboTextureQueue = LinkedList<Pair<TextureData, Long>>()
@@ -63,6 +65,9 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
     @Volatile
     private var surfaceHolder: SurfaceHolder? = null
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    @Volatile
+    private var playback = true
 
     fun setMediaResolution(size: Size) {
         textureData?.resolution = size
@@ -114,6 +119,7 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
             val st = it.first().second
 
             st.setOnFrameAvailableListener { surfaceText ->
+                if (!playback) return@setOnFrameAvailableListener
                 val textData = textureData ?: return@setOnFrameAvailableListener
                 if (textData.resolution == DefaultSize) return@setOnFrameAvailableListener
 
@@ -134,8 +140,11 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
                         textData.resolution.height
                     )
 
-                    // TODO crash here
-                    val (fboTexture, _) = synchronized(fboTextureQueue) { fboTextureQueue.poll()!! }
+                    // TODO FIXME
+                    val (fboTexture, _) = synchronized(fboTextureQueue) {
+                        fboTextureQueue.poll() ?: return@requestRender
+                    }
+
                     secondFilter.onBeforeDraw = {
                         checkGlError("before second filter maybeBindFbo")
                         bindFbo(fbo, fboTexture.textureId)
@@ -162,12 +171,13 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
     }
 
     fun stop() {
+        playback = false
         mainHandler.removeCallbacksAndMessages(null)
     }
 
     private fun maybeSetupFboTextureQueue(resolution: Size) {
         if (fboTextureQueue.isEmpty()) {
-            synchronized(fboTextureQueue){
+            synchronized(fboTextureQueue) {
                 val textures = IntArray(TEXTURE_CACHE_INIT_SIZE)
                 newTexture(
                     textures,
@@ -199,12 +209,34 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
         secondOpenglEnv = null
     }
 
+    // avg: 30ms
+    fun readBitmap(callback: (Bitmap?) -> Unit) {
+        mainOpenglEnv?.postOrRun {
+            Logger.d(TAG, "readBitmap: ${fboTextureQueue.size}")
+            val width = viewResolution.width
+            val height = viewResolution.height
+            if (width <= 0 || height <= 0) {
+                Logger.e(TAG, "invalid size:$width*$height")
+                callback(null)
+                return@postOrRun
+            }
+            val start = System.currentTimeMillis()
+            val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+            nativeReadPixel(bitmap, width, height)
+            Logger.i(TAG, "readBitmap cost:${System.currentTimeMillis() - start}")
+            callback(bitmap)
+        }
+    }
+
+    external fun nativeReadPixel(bitmap: Bitmap, width: Int, height: Int)
+
     private fun maybeScheduleRender() {
         val delayMs = 1000L / FPS
         mainHandler.removeCallbacksAndMessages(null)
         mainHandler.postDelayed({
             // 主渲染线程，负责上屏
             mainOpenglEnv?.requestRender {
+                if (!playback) return@requestRender
                 if (viewResolution == DefaultSize) return@requestRender
                 if (surfaceHolder == null) return@requestRender
 
