@@ -57,7 +57,6 @@ class Sampler2DTexture(
                 Size(bitmap.width, bitmap.height),
                 matrix,
             )
-            bitmap.recycle()
             return texture
         }
 
