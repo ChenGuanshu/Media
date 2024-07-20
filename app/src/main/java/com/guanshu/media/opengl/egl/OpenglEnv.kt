@@ -74,10 +74,9 @@ class OpenglEnv(name: String) {
 
     fun initEglSurface(surface: Any) {
         postOrRun {
-            egl.releaseEglSurface()
-
-            egl.initEglSurface(surface)
-            egl.makeEglCurrent()
+//            egl.releaseEglSurface()
+            val eglSurface = egl.initEglSurface(surface)
+            egl.makeEglCurrent(eglSurface)
         }
     }
 
