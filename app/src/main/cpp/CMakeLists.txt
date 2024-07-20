@@ -70,7 +70,7 @@ buildlib()
 set(ffmpeg avcodec avdevice avfilter avformat avutil swresample swscale)
 
 find_library( EGL-lib EGL )
-find_library( GLESv2-lib GLESv2 )
+find_library( GLES-lib GLESv3 )
 
 # Specifies libraries CMake should link to your target library. You
 # can link libraries from various origins, such as libraries defined in this
@@ -80,7 +80,8 @@ target_link_libraries(
         # List libraries link to the target library
         android
         log
+        jnigraphics
         ${ffmpeg}
         ${EGL-lib}
-        ${GLESv2-lib}
+        ${GLES-lib}
 )
