@@ -21,7 +21,8 @@ include_directories(${CMAKE_SOURCE_DIR}/include)
 # 定义包含源文件的目录
 set(SOURCE_DIR "src")
 # 使用 file(GLOB ...) 命令收集该目录下的所有 .cpp 文件
-file(GLOB SOURCE_FILES "${SOURCE_DIR}/*.cpp")
+file(GLOB_RECURSE SOURCE_FILES "${SOURCE_DIR}/*.cpp")
+#file(GLOB SOURCE_FILES "${SOURCE_DIR}/*.cpp")
 
 # Creates and names a library, sets it as either STATIC
 # or SHARED, and provides the relative paths to its source code.
@@ -38,7 +39,7 @@ file(GLOB SOURCE_FILES "${SOURCE_DIR}/*.cpp")
 # used in the AndroidManifest.xml file.
 add_library(${CMAKE_PROJECT_NAME} SHARED
         ${SOURCE_FILES}
-#        media.cpp hellocpp.cpp Utils.cpp
+        #        media.cpp hellocpp.cpp Utils.cpp
 )
 
 set(libs "${CMAKE_SOURCE_DIR}/libs")
@@ -69,19 +70,17 @@ endfunction()
 buildlib()
 set(ffmpeg avcodec avdevice avfilter avformat avutil swresample swscale)
 
-find_library( EGL-lib EGL )
-find_library( GLES-lib GLESv3 )
-
 # Specifies libraries CMake should link to your target library. You
 # can link libraries from various origins, such as libraries defined in this
 # build script, prebuilt third-party libraries, or Android system libraries.
 target_link_libraries(
         ${CMAKE_PROJECT_NAME}
         # List libraries link to the target library
+        ${ffmpeg}
         android
         log
         jnigraphics
-        ${ffmpeg}
-        ${EGL-lib}
-        ${GLES-lib}
+        OpenSLES
+        EGL
+        GLESv3
 )

@@ -2,7 +2,9 @@ package com.guanshu.media.view
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.PixelFormat
 import android.graphics.SurfaceTexture
+import android.media.ImageReader
 import android.opengl.GLES20
 import android.os.Handler
 import android.os.Looper
@@ -12,7 +14,6 @@ import android.view.Surface
 import android.view.SurfaceHolder
 import android.view.SurfaceView
 import com.guanshu.media.opengl.TextureData
-import com.guanshu.media.opengl.abstraction.Sampler2DTexture
 import com.guanshu.media.opengl.bindFbo
 import com.guanshu.media.opengl.checkGlError
 import com.guanshu.media.opengl.egl.OpenglEnv
@@ -213,7 +214,7 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
     // avg: 30ms
     fun readBitmap(callback: (Bitmap?) -> Unit) {
         mainOpenglEnv?.postOrRun {
-            Logger.d(TAG, "readBitmap: ${fboTextureQueue.size}")
+            Logger.d(TAG, "readBitmap1")
             val width = viewResolution.width
             val height = viewResolution.height
             if (width <= 0 || height <= 0) {
@@ -221,11 +222,19 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
                 callback(null)
                 return@postOrRun
             }
+
             val start = System.currentTimeMillis()
 
-            // TODO 理论上要绑定FBO/Texture
+            val (inputTexture, inPts) = synchronized(fboTextureQueue) {
+                fboTextureQueue.removeLastOrNull() ?: return@postOrRun
+            }
+            bindFbo(fbo, inputTexture.textureId)
+            GLES20.glViewport(0, 0, width, height)
             val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
             nativeReadPixel(bitmap, width, height)
+            unbindFbo()
+
+            fboTextureQueue.addLast(Pair(inputTexture, inPts))
 
 //            val texture = Sampler2DTexture.fromFilePath("/res/drawable/pikachu.png")
 //            bindFbo(fbo, texture.textureId)
@@ -239,9 +248,10 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
     }
 
     // 50-100+ms
+    // TODO 这里有问题
     fun readBitmap2(callback: (Bitmap?) -> Unit) {
         mainOpenglEnv?.postOrRun {
-            Logger.d(TAG, "readBitmap2: ${fboTextureQueue.size}")
+            Logger.d(TAG, "readBitmap2")
             val width = viewResolution.width
             val height = viewResolution.height
             if (width <= 0 || height <= 0) {
@@ -249,12 +259,12 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
                 callback(null)
                 return@postOrRun
             }
-            GLES20.glViewport(0, 0, width, height)
             val start = System.currentTimeMillis()
             val (inputTexture, inPts) = synchronized(fboTextureQueue) {
                 fboTextureQueue.removeLastOrNull() ?: return@postOrRun
             }
             bindFbo(fbo, inputTexture.textureId)
+            GLES20.glViewport(0, 0, width, height)
 
             checkGlError("before readPBO")
             val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
@@ -265,6 +275,57 @@ class AdvancedOpenglSurfaceView : SurfaceView, SurfaceHolder.Callback {
             unbindFbo()
             Logger.i(TAG, "readBitmap by PBO cost:${System.currentTimeMillis() - start}")
             callback(bitmap)
+        }
+    }
+
+    // step 1 20ms, step 2 +20ms
+    fun readBitmap3(callback: (Bitmap?) -> Unit) {
+        mainOpenglEnv?.postOrRun {
+            Logger.d(TAG, "readBitmap3")
+            val width = viewResolution.width
+            val height = viewResolution.height
+            if (width <= 0 || height <= 0) {
+                Logger.e(TAG, "invalid size:$width*$height")
+                callback(null)
+                return@postOrRun
+            }
+            val start = System.currentTimeMillis()
+
+            val imageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 1)
+            imageReader.setOnImageAvailableListener({ reader ->
+                val image = reader.acquireLatestImage()
+                Logger.i(
+                    TAG,
+                    "readBitmap3 by ImageReader step 1: cost:${System.currentTimeMillis() - start}"
+                )
+
+                val pixelStride = image.planes[0].pixelStride
+                val rowStride = image.planes[0].rowStride
+                val rowPadding = rowStride - pixelStride * width
+                val bitmap = Bitmap.createBitmap(width + rowPadding / pixelStride, height, Bitmap.Config.ARGB_8888)
+                bitmap.copyPixelsFromBuffer(image.planes[0].buffer)
+                Logger.i(
+                    TAG,
+                    "readBitmap3 by ImageReader final cost:${System.currentTimeMillis() - start}"
+                )
+
+                callback(bitmap)
+            }, mainHandler)
+
+
+            val (inputTexture, inPts) = synchronized(fboTextureQueue) {
+                fboTextureQueue.removeLastOrNull() ?: return@postOrRun
+            }
+
+            GLES20.glViewport(0, 0, width, height)
+            mainOpenglEnv?.initEglSurface(imageReader.surface)
+            mainFilter.render(
+                listOf(inputTexture),
+                viewResolution,
+            )
+            checkGlError("after main filter render")
+            mainOpenglEnv?.swapBuffer()
+            fboTextureQueue.addLast(Pair(inputTexture, inPts))
         }
     }
 

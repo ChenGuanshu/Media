@@ -8,6 +8,8 @@
 #include <EGL/egl.h>
 #include <string.h>
 #include <chrono>
+#include <android/native_window.h>
+#include <android/native_window_jni.h>
 
 void checkGlError(const char *op)
 {
@@ -93,25 +95,31 @@ Java_com_guanshu_media_view_AdvancedOpenglSurfaceView_nativeReadPBO(
     }
     LOGD("bitmap width:%d, height:%d", info.width, info.height);
 
+    auto start = std::chrono::high_resolution_clock::now(); // this is not right for mapBufferRange
     // 创建PBO
     glGenBuffers(1, pboIds);
     glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[0]);
     glBufferData(GL_PIXEL_PACK_BUFFER, info.width * info.height * 4, 0, GL_STREAM_READ);
     checkGlError("bind PBO");
+    auto end0 = std::chrono::high_resolution_clock::now();
+    auto duration0 = std::chrono::duration_cast<std::chrono::milliseconds>(end0 - start);
+    LOGD("glGenBuffers cost:%lld ms", duration0.count());
 
     // 读取帧缓冲到PBO
     glReadPixels(0, 0, info.width, info.height, GL_RGBA, GL_UNSIGNED_BYTE, 0);
     checkGlError("readTo PBO");
+    auto end1 = std::chrono::high_resolution_clock::now();
+    auto duration1 = std::chrono::duration_cast<std::chrono::milliseconds>(end1 - start);
+    LOGD("readPixel cost:%lld ms", duration1.count());
 
     glBindBuffer(GL_PIXEL_PACK_BUFFER, pboIds[0]);
-//    auto start = std::chrono::high_resolution_clock::now(); // this is not right for mapBufferRange
     GLubyte *ptr = static_cast<GLubyte *>(glMapBufferRange(GL_PIXEL_PACK_BUFFER, 0,
                                                            info.width * info.height * 4,
                                                            GL_MAP_READ_BIT));
     checkGlError("mapBufferRange");
-//    auto end = std::chrono::high_resolution_clock::now();
-//    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-//    LOGD("mapBufferRange cost:%lld ms", duration.count());
+    auto end2 = std::chrono::high_resolution_clock::now();
+    auto duration2 = std::chrono::duration_cast<std::chrono::milliseconds>(end2 - start);
+    LOGD("glMapBufferRange cost:%lld ms", duration2.count());
 
     // 将PBO中的数据拷贝到bitmap
     if (ptr) {
@@ -119,6 +127,9 @@ Java_com_guanshu_media_view_AdvancedOpenglSurfaceView_nativeReadPBO(
         glUnmapBuffer(GL_PIXEL_PACK_BUFFER);
     }
     checkGlError("unmapBuffer");
+    auto end3 = std::chrono::high_resolution_clock::now();
+    auto duration3 = std::chrono::duration_cast<std::chrono::milliseconds>(end3 - start);
+    LOGD("memcpy cost:%lld ms", duration3.count());
 
     // 清理
     glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);

@@ -1,4 +1,4 @@
-#pragma
+#pragma once
 
 #include <stdarg.h>
 #include <android/log.h>

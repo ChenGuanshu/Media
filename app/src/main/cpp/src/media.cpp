@@ -5,6 +5,7 @@
 #include <android/native_window.h>
 #include <android/native_window_jni.h>
 #include "Utils.h"
+#include "player/FFMpegPlayer.h"
 
 extern "C" {
 #include "libavutil/time.h"
@@ -315,6 +316,15 @@ extern "C"
 JNIEXPORT jint JNICALL
 Java_com_guanshu_media_FfmpegPlayerActivity_decodeAudio(JNIEnv *env, jobject thiz, jstring file)
 {
+    if (true) {
+
+        const char *src = env->GetStringUTFChars(file, 0);
+        FFMpegPlayer player;
+        player.init(env, thiz, src);
+        player.start();
+
+        return 0;
+    }
     if (false) {
         LOGD("start decode audio v1");
         return decodeAudioV1(env, thiz, file);
@@ -429,6 +439,7 @@ Java_com_guanshu_media_FfmpegPlayerActivity_decodeMedia(
     nativeWindow = ANativeWindow_fromSurface(env, surface);
     ANativeWindow_setBuffersGeometry(nativeWindow, videoWidth, videoHeight,
                                      WINDOW_FORMAT_RGBA_8888);
+
     bufferSize = av_image_get_buffer_size(AV_PIX_FMT_RGBA, videoWidth, videoHeight, 1);
     frameBuffer = (uint8_t *) av_malloc(bufferSize * sizeof(uint8_t));
 
