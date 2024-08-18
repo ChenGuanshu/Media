@@ -38,14 +38,15 @@ class FfmpegPlayerActivity : ComponentActivity() {
         surfaceView.requestSurface { surface ->
             Logger.d(TAG, "requestSurface result: $surface")
             Thread {
-                Logger.d(TAG, "start decode media")
-                decodeMedia(VIDEO_PATH, surface, surfaceView)
-                Logger.d(TAG, "start decode media DONE")
-                surfaceView.stop()
-                surfaceView.readBitmap3 { bitmap ->
-                    Logger.d(TAG, "readBitmap done $bitmap")
-                }
+//                Logger.d(TAG, "start decode media")
+//                decodeMedia(VIDEO_PATH, surface, surfaceView)
+//                Logger.d(TAG, "start decode media DONE")
+//                surfaceView.stop()
+//                surfaceView.readBitmap3 { bitmap ->
+//                    Logger.d(TAG, "readBitmap done $bitmap")
+//                }
 
+                playbackAudio()
             }.start()
         }
 

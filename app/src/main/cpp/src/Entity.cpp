@@ -1,5 +1,3 @@
-//#pragma
-
 #include "string"
 #include "Entity.h"
 #include "Utils.h"
